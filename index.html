@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>DIBBA RADAR</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#060a0f">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="scanline"></div>
+<div id="panel">
+    <div class="hdr">
+        <div class="route-tag">radar // live</div>
+        <button id="dirToggle" onclick="flipDir()"><span class="arrow" id="dirArrow">&#8594;</span> <span id="dirLabel">DXB &gt; DIBBA</span></button>
+    </div>
+    <h1>DUBAI &mdash; DIBBA AL HISN</h1>
+    <div class="sub">ENOC Al Awir to Wave Cafe &bull; Fixed + live alerts</div>
+    <div class="st">
+        <div class="si"><div class="sv" style="color:var(--warn)" id="camCount">--</div><div class="sl">Cameras</div></div>
+        <div class="si"><div class="sv" style="color:var(--accent)" id="maxGap">--</div><div class="sl">Max Gap</div></div>
+        <div class="si"><div class="sv" style="color:var(--custom)">115.8</div><div class="sl">Route km</div></div>
+        <div class="si"><div class="sv" style="color:var(--s120)">85</div><div class="sl">Minutes</div></div>
+    </div>
+    <div id="densityBar"></div>
+    <div id="wazeStatus"><div class="dot"></div><span id="wazeText">WAZE: CHECKING...</span><button id="refreshBtn" onclick="fetchWaze()">REFRESH</button></div>
+</div>
+<div id="lg">
+    <div class="li"><div class="ld" style="background:var(--s120);box-shadow:0 0 5px var(--s120)"></div>120 km/h</div>
+    <div class="li"><div class="ld" style="background:var(--s100);box-shadow:0 0 5px var(--s100)"></div>100 km/h</div>
+    <div class="li"><div class="ld" style="background:var(--unk);box-shadow:0 0 5px var(--unk)"></div>Unknown</div>
+    <div class="li"><div class="ld" style="background:var(--custom);box-shadow:0 0 5px var(--custom)"></div>Your pins</div>
+    <div class="li"><div class="ld" style="background:#ffc107;box-shadow:0 0 5px #ffc107"></div>Waze live</div>
+    <div class="li"><div class="ld" style="background:var(--offr);opacity:0.5"></div>Off-route</div>
+    <div class="li"><div class="ll" style="background:var(--accent)"></div>Open &gt;5km</div>
+    <div class="li"><div class="ll" style="background:#4ade80"></div>Clear 3-5km</div>
+    <div class="li"><div class="ll" style="background:var(--s120)"></div>1-3km</div>
+    <div class="li"><div class="ll" style="background:var(--warn)"></div>&lt;1km</div>
+</div>
+<div id="addMode">
+    <button id="addBtn" onclick="toggleAdd()">+ ADD CAMERA</button>
+    <div id="customCount"></div>
+    <div id="addInfo">Pin cameras from Waze</div>
+    <button id="exportBtn" onclick="exportPins()">COPY PINS</button>
+</div>
+<div id="overlay" onclick="cancelAdd()"></div>
+<div id="speedPicker">
+    <h3>SPEED LIMIT</h3>
+    <div class="spd-grid">
+        <button class="spd-btn" onclick="confirmAdd('60')">60</button>
+        <button class="spd-btn" onclick="confirmAdd('80')">80</button>
+        <button class="spd-btn" onclick="confirmAdd('100')">100</button>
+        <button class="spd-btn" onclick="confirmAdd('120')">120</button>
+        <button class="spd-btn" onclick="confirmAdd('140')">140</button>
+        <button class="spd-btn" onclick="confirmAdd('?')">?</button>
+    </div>
+    <button id="cancelAdd" onclick="cancelAdd()">CANCEL</button>
+</div>
+<div id="attrib">Data: OpenStreetMap + Waze &bull; Built by Runman</div>
+<div id="map"></div>
+
+<!-- Route data (inline JS for file:// compatibility, also fetched as JSON on HTTP) -->
+<script src="data/dubai-dibba.js"></script>
+<!-- JS modules in dependency order (no ES modules) -->
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/cameras.js"></script>
+<script src="js/pins.js"></script>
+<script src="js/waze.js"></script>
+<script src="js/map.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
