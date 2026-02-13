@@ -102,6 +102,9 @@
       if (alertLimit) alertLimit.textContent = 'Allow location when prompted';
     }
 
+    // Stop passive location if running
+    stopPassive();
+
     tracking = true;
     positions = [];
     routeKmHistory = [];
@@ -255,6 +258,9 @@
     if (DR.alerts && DR.alerts.reset) {
       DR.alerts.reset();
     }
+
+    // Restart passive location
+    locatePassive();
   }
 
   /** Handle new GPS position */
@@ -592,6 +598,86 @@
     }
   }
 
+  /** Passive locate -- just show blue dot on map, no driving mode, no alerts.
+   *  Called automatically on page load. Doesn't need user gesture on most browsers
+   *  for getCurrentPosition (only watchPosition sometimes needs it). */
+  var passiveWatchId = null;
+
+  function locatePassive() {
+    if (tracking) return; // already in driving mode
+    if (!navigator.geolocation) return;
+
+    // Use watchPosition for continuous updates even in passive mode
+    passiveWatchId = navigator.geolocation.watchPosition(
+      function(pos) {
+        if (tracking) return; // switched to driving mode, let that handler take over
+
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+        var acc = pos.coords.accuracy;
+
+        // Update state (but not speed/heading/routeKm -- those are driving-only)
+        state.lat = lat;
+        state.lon = lon;
+        state.accuracy = acc;
+
+        // Show blue dot
+        var map = DR.mapModule.getMap();
+        if (!map) return;
+
+        if (!blueDotMarker) {
+          blueDotMarker = L.marker([lat, lon], {
+            icon: L.divIcon({
+              className: 'blue-dot-icon',
+              html: '<div class="blue-dot-container"><div class="blue-dot"></div></div>',
+              iconSize: [40, 40],
+              iconAnchor: [20, 20]
+            }),
+            zIndexOffset: 2000,
+            interactive: false
+          }).addTo(map);
+
+          blueDotCircle = L.circle([lat, lon], {
+            radius: acc || 20,
+            color: '#4285f4',
+            fillColor: '#4285f4',
+            fillOpacity: 0.1,
+            weight: 1,
+            opacity: 0.3
+          }).addTo(map);
+
+          // Center map on user if they're in the UAE region
+          if (lat > 22 && lat < 27 && lon > 51 && lon < 57) {
+            map.setView([lat, lon], 12, { animate: true });
+          }
+        } else {
+          blueDotMarker.setLatLng([lat, lon]);
+          if (blueDotCircle) {
+            blueDotCircle.setLatLng([lat, lon]);
+            if (acc) blueDotCircle.setRadius(acc);
+          }
+        }
+      },
+      function(err) {
+        // Silently fail in passive mode -- user didn't explicitly ask
+        console.log('Passive GPS:', err.code, err.message);
+      },
+      {
+        enableHighAccuracy: false, // save battery in passive mode
+        maximumAge: 30000,
+        timeout: 10000
+      }
+    );
+  }
+
+  /** Stop passive tracking (called when driving mode starts) */
+  function stopPassive() {
+    if (passiveWatchId !== null) {
+      navigator.geolocation.clearWatch(passiveWatchId);
+      passiveWatchId = null;
+    }
+  }
+
   DR.gps = {
     getState: getState,
     isTracking: isTracking,
@@ -599,6 +685,7 @@
     startTracking: startTracking,
     stopTracking: stopTracking,
     toggleAutoCenter: toggleAutoCenter,
-    setupMapDragHandler: setupMapDragHandler
+    setupMapDragHandler: setupMapDragHandler,
+    locatePassive: locatePassive
   };
 })();

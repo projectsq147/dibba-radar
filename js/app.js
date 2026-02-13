@@ -29,12 +29,14 @@
     });
   }
 
-  /** Check if GPS is available and show start drive button */
+  /** Check if GPS is available, show start button, and get passive location */
   function checkGPSAvailability() {
     var btn = document.getElementById('startDriveBtn');
     if (!btn) return;
     if ('geolocation' in navigator) {
       btn.style.display = 'block';
+      // Immediately get user location (passive -- no driving mode, just show blue dot)
+      DR.gps.locatePassive();
     } else {
       btn.style.display = 'none';
     }
