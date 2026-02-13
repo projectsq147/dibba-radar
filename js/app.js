@@ -53,13 +53,8 @@
 
   // Phase 1B: Driving
   window.startDrive = function () {
+    // GPS module handles all UI transitions including HUD switch on first fix
     DR.gps.startTracking();
-    // Switch to HUD after a brief delay to let GPS acquire
-    setTimeout(function () {
-      if (DR.gps.isTracking()) {
-        DR.hud.show();
-      }
-    }, 2000);
   };
 
   window.stopDrive = function () {

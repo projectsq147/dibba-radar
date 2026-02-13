@@ -51,19 +51,62 @@
     }
   }
 
+  /** Detect if running in a restricted in-app browser */
+  function isInAppBrowser() {
+    var ua = navigator.userAgent || '';
+    // Telegram, Instagram, Facebook, Twitter in-app browsers
+    return /Telegram|FBAN|FBAV|Instagram|Twitter|Line\//i.test(ua);
+  }
+
   /** Start GPS tracking */
   function startTracking() {
     if (tracking) return;
+
+    // Check for in-app browser
+    if (isInAppBrowser()) {
+      showGPSError('Open in Safari or Chrome -- in-app browsers block GPS');
+      // Show a persistent banner with instructions
+      var banner = document.getElementById('alertBanner');
+      if (banner) {
+        banner.style.display = 'block';
+        banner.className = 'alert-banner alert-orange';
+        var text = document.getElementById('alertText');
+        if (text) text.textContent = 'TAP ... MENU > OPEN IN BROWSER';
+        var limit = document.getElementById('alertLimit');
+        if (limit) limit.textContent = 'In-app browsers block GPS';
+      }
+      return;
+    }
 
     if (!navigator.geolocation) {
       showGPSError('GPS not available on this device');
       return;
     }
 
+    // Show acquiring state immediately
+    var startBtn = document.getElementById('startDriveBtn');
+    if (startBtn) {
+      startBtn.textContent = 'ACQUIRING GPS...';
+      startBtn.classList.add('acquiring');
+      startBtn.disabled = true;
+    }
+
+    // Show alert banner with acquiring message
+    var alertBanner = document.getElementById('alertBanner');
+    if (alertBanner) {
+      alertBanner.style.display = 'block';
+      alertBanner.className = 'alert-banner alert-yellow';
+      var alertText = document.getElementById('alertText');
+      if (alertText) alertText.textContent = 'ACQUIRING GPS...';
+      var alertLimit = document.getElementById('alertLimit');
+      if (alertLimit) alertLimit.textContent = 'Allow location when prompted';
+    }
+
     tracking = true;
     positions = [];
     routeKmHistory = [];
     state.direction = null;
+    var gotFirstFix = false;
 
     // Create audio context on user gesture
     if (DR.alerts && DR.alerts.initAudio) {
@@ -75,28 +118,59 @@
       DR.hud.requestWakeLock();
     }
 
+    // Wrap onPosition to handle first fix
+    var originalOnPosition = onPosition;
+    var wrappedOnPosition = function(pos) {
+      if (!gotFirstFix) {
+        gotFirstFix = true;
+        // NOW switch to full driving UI
+        if (startBtn) startBtn.style.display = 'none';
+        var stopBtn = document.getElementById('stopDriveBtn');
+        if (stopBtn) stopBtn.style.display = 'block';
+        var centerBtn = document.getElementById('centerBtn');
+        if (centerBtn) centerBtn.style.display = 'block';
+        var speedOverlay = document.getElementById('speedOverlay');
+        if (speedOverlay) speedOverlay.style.display = 'flex';
+        // Update alert banner
+        if (alertBanner) {
+          alertBanner.className = 'alert-banner';
+          var at = document.getElementById('alertText');
+          if (at) at.textContent = 'GPS LOCKED';
+          var al = document.getElementById('alertLimit');
+          if (al) al.textContent = '';
+          // Flash green briefly
+          alertBanner.classList.add('alert-green');
+          setTimeout(function() {
+            alertBanner.classList.remove('alert-green');
+          }, 2000);
+        }
+        document.body.classList.add('driving');
+
+        // Switch to HUD after brief delay
+        setTimeout(function() {
+          if (tracking) DR.hud.show();
+        }, 1500);
+      }
+      originalOnPosition(pos);
+    };
+
     watchId = navigator.geolocation.watchPosition(
-      onPosition,
+      wrappedOnPosition,
       onError,
       {
         enableHighAccuracy: true,
         maximumAge: 1000,
-        timeout: 10000
+        timeout: 15000
       }
     );
 
-    // Update UI
-    document.body.classList.add('driving');
-    var startBtn = document.getElementById('startDriveBtn');
-    if (startBtn) startBtn.style.display = 'none';
-    var stopBtn = document.getElementById('stopDriveBtn');
-    if (stopBtn) stopBtn.style.display = 'block';
-    var centerBtn = document.getElementById('centerBtn');
-    if (centerBtn) centerBtn.style.display = 'block';
-    var speedOverlay = document.getElementById('speedOverlay');
-    if (speedOverlay) speedOverlay.style.display = 'flex';
-    var alertBanner = document.getElementById('alertBanner');
-    if (alertBanner) alertBanner.style.display = 'block';
+    // Timeout fallback -- if no fix in 20 seconds
+    setTimeout(function() {
+      if (tracking && !gotFirstFix) {
+        showGPSError('GPS timeout -- check location settings');
+        stopTracking();
+      }
+    }, 20000);
 
     // Start smooth animation
     startAnimation();
@@ -154,15 +228,24 @@
     // Update UI
     document.body.classList.remove('driving');
     var startBtn = document.getElementById('startDriveBtn');
-    if (startBtn) startBtn.style.display = 'block';
+    if (startBtn) {
+      startBtn.style.display = 'block';
+      startBtn.textContent = 'START DRIVE';
+      startBtn.classList.remove('acquiring');
+      startBtn.disabled = false;
+    }
     var stopBtn = document.getElementById('stopDriveBtn');
     if (stopBtn) stopBtn.style.display = 'none';
     var centerBtn = document.getElementById('centerBtn');
     if (centerBtn) centerBtn.style.display = 'none';
     var speedOverlay = document.getElementById('speedOverlay');
     if (speedOverlay) speedOverlay.style.display = 'none';
+    // Don't hide alert banner here -- let error messages handle their own timeout
+    // Only hide if it's not showing an error (red)
     var alertBanner = document.getElementById('alertBanner');
-    if (alertBanner) alertBanner.style.display = 'none';
+    if (alertBanner && !alertBanner.classList.contains('alert-red') && !alertBanner.classList.contains('alert-orange')) {
+      alertBanner.style.display = 'none';
+    }
     var offRouteBadge = document.getElementById('offRouteBadge');
     if (offRouteBadge) offRouteBadge.style.display = 'none';
     var slowDown = document.getElementById('slowDownOverlay');
@@ -467,24 +550,33 @@
   function onError(err) {
     console.warn('GPS error:', err.code, err.message);
     if (err.code === 1) {
-      showGPSError('Location permission denied');
+      // Permission denied -- stop tracking first, then show error (so banner stays visible)
       stopTracking();
+      showGPSError('LOCATION PERMISSION DENIED');
     } else if (err.code === 2) {
-      showGPSError('Location unavailable');
+      showGPSError('LOCATION UNAVAILABLE -- CHECK SETTINGS');
+    } else if (err.code === 3) {
+      // Timeout -- show message but keep trying
+      showGPSError('GPS ACQUIRING -- MOVE OUTDOORS');
     }
-    // timeout (code 3) -- just wait for next fix
   }
 
   function showGPSError(msg) {
     var banner = document.getElementById('alertBanner');
     if (banner) {
-      var text = banner.querySelector('.alert-text');
+      var text = document.getElementById('alertText');
       if (text) text.textContent = msg;
+      var limit = document.getElementById('alertLimit');
+      if (limit) limit.textContent = '';
       banner.style.display = 'block';
       banner.className = 'alert-banner alert-red';
+      // Keep visible for 8 seconds so user can read it
       setTimeout(function () {
-        if (!tracking) banner.style.display = 'none';
-      }, 5000);
+        if (!tracking) {
+          banner.style.display = 'none';
+          banner.className = 'alert-banner';
+        }
+      }, 8000);
     }
   }
 

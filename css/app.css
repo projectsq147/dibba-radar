@@ -629,6 +629,17 @@ body.add-mode .leaflet-container {
   transform: translateX(-50%) scale(0.92);
 }
 
+#startDriveBtn.acquiring {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+  animation: acquiringPulse 1s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes acquiringPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* Hide start button during driving */
 body.driving #startDriveBtn {
   display: none !important;
@@ -765,6 +776,15 @@ body.driving #lg {
 @keyframes alertFlash {
   0%, 100% { background: rgba(255, 59, 59, 0.3); }
   50% { background: rgba(255, 59, 59, 0.6); }
+}
+
+.alert-banner.alert-green {
+  background: rgba(0, 255, 136, 0.15);
+  border-color: var(--accent);
+}
+
+.alert-banner.alert-green .alert-text {
+  color: var(--accent);
 }
 
 .alert-banner.alert-flash {
