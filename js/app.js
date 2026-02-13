@@ -1,4 +1,4 @@
-/* js/app.js -- Entry point, initializes everything */
+/* js/app.js -- Entry point, initializes everything, wires up driving mode */
 (function () {
   'use strict';
   var DR = window.DibbaRadar = window.DibbaRadar || {};
@@ -18,10 +18,31 @@
       // Fetch Waze alerts
       DR.waze.fetch(DR.mapModule.getWazeLayer());
       DR.waze.startAutoRefresh(DR.mapModule.getWazeLayer());
+
+      // Set up GPS drag handler (disables auto-center on manual pan)
+      if (DR.gps && DR.gps.setupMapDragHandler) {
+        DR.gps.setupMapDragHandler();
+      }
+
+      // Check GPS availability, show/hide start button
+      checkGPSAvailability();
     });
   }
 
-  // Expose global functions for onclick handlers in HTML
+  /** Check if GPS is available and show start drive button */
+  function checkGPSAvailability() {
+    var btn = document.getElementById('startDriveBtn');
+    if (!btn) return;
+    if ('geolocation' in navigator) {
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  // === Global onclick handlers for HTML ===
+
+  // Existing
   window.flipDir = function () { DR.mapModule.flipDir(); };
   window.toggleAdd = function () { DR.mapModule.toggleAdd(); };
   window.confirmAdd = function (speed) { DR.mapModule.confirmAdd(speed); };
@@ -29,6 +50,42 @@
   window.exportPins = function () { DR.mapModule.exportPins(); };
   window.fetchWaze = function () { DR.waze.fetch(DR.mapModule.getWazeLayer()); };
   window.removeCustom = function (lat, lon) { DR.mapModule.removeCustom(lat, lon); };
+
+  // Phase 1B: Driving
+  window.startDrive = function () {
+    DR.gps.startTracking();
+    // Switch to HUD after a brief delay to let GPS acquire
+    setTimeout(function () {
+      if (DR.gps.isTracking()) {
+        DR.hud.show();
+      }
+    }, 2000);
+  };
+
+  window.stopDrive = function () {
+    DR.gps.stopTracking();
+  };
+
+  window.centerOnMe = function () {
+    DR.gps.toggleAutoCenter();
+  };
+
+  // Phase 1D: HUD
+  window.hudTap = function (e) {
+    // Don't toggle if tapping buttons
+    if (e.target.tagName === 'BUTTON') return;
+    DR.hud.toggle();
+  };
+
+  window.hudToMap = function (e) {
+    e.stopPropagation();
+    DR.hud.hide();
+  };
+
+  window.hudStop = function (e) {
+    e.stopPropagation();
+    DR.gps.stopTracking();
+  };
 
   // Boot on DOM ready
   if (document.readyState === 'loading') {

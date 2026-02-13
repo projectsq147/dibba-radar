@@ -62,6 +62,66 @@
     </div>
     <button id="cancelAdd" onclick="cancelAdd()">CANCEL</button>
 </div>
+
+<!-- ===== Phase 1B+1C+1D: Driving Mode UI ===== -->
+
+<!-- START DRIVE button (big, prominent, green glow) -->
+<button id="startDriveBtn" onclick="startDrive()">START DRIVE</button>
+
+<!-- STOP DRIVE button (red, shows during drive) -->
+<button id="stopDriveBtn" onclick="stopDrive()">STOP</button>
+
+<!-- CENTER button (re-centers map on user) -->
+<button id="centerBtn" onclick="centerOnMe()">CENTER</button>
+
+<!-- Camera alert banner (fixed top during drive) -->
+<div id="alertBanner" class="alert-banner">
+    <div id="alertText" class="alert-text"></div>
+    <div id="alertLimit" class="alert-limit"></div>
+</div>
+
+<!-- Speed display overlay (map view while driving) -->
+<div id="speedOverlay" class="speed-overlay">
+    <div id="speedValue" class="speed-value">--</div>
+    <div class="speed-unit">km/h</div>
+</div>
+
+<!-- OFF ROUTE warning badge -->
+<div id="offRouteBadge" class="off-route-badge">OFF ROUTE</div>
+
+<!-- SLOW DOWN warning overlay -->
+<div id="slowDownOverlay" class="slow-down-overlay">
+    <div class="slow-down-text">SLOW DOWN</div>
+</div>
+
+<!-- HUD Container (full-screen driving display) -->
+<div id="hudContainer" class="hud-container" onclick="hudTap(event)">
+    <div class="hud-top">
+        <div id="hudCamLabel" class="hud-cam-label">CAMERA IN</div>
+        <div id="hudCamDist" class="hud-cam-dist">--</div>
+        <div class="hud-cam-bar">
+            <div id="hudCamBar" class="hud-cam-bar-fill"></div>
+        </div>
+    </div>
+    <div class="hud-center">
+        <div id="hudSpeed" class="hud-speed hud-speed-ok">--</div>
+        <div id="hudSpeedUnit" class="hud-speed-unit">km/h</div>
+        <div id="hudLimit" class="hud-limit"></div>
+    </div>
+    <div class="hud-bottom">
+        <div class="hud-bottom-row">
+            <div id="hudGap" class="hud-gap"></div>
+            <div id="hudNextInfo" class="hud-next-info"></div>
+        </div>
+        <div class="hud-progress-bar">
+            <div id="hudProgress" class="hud-progress-fill"></div>
+        </div>
+        <div id="hudOffRoute" class="hud-off-route">OFF ROUTE</div>
+    </div>
+    <button id="hudMapBtn" class="hud-map-btn" onclick="hudToMap(event)">MAP</button>
+    <button id="hudStopBtn" class="hud-stop-btn" onclick="hudStop(event)">STOP</button>
+</div>
+
 <div id="attrib">Data: OpenStreetMap + Waze &bull; Built by Runman</div>
 <div id="map"></div>
 
@@ -74,6 +134,9 @@
 <script src="js/pins.js"></script>
 <script src="js/waze.js"></script>
 <script src="js/map.js"></script>
+<script src="js/gps.js"></script>
+<script src="js/alerts.js"></script>
+<script src="js/hud.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
