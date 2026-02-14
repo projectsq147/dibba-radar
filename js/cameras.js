@@ -19,6 +19,7 @@
     if (DR._routeData) {
       routeData = DR._routeData;
       cumDist = DR.buildCumDist(routeData.route_ab);
+      _buildSpeedZones();
       if (cb) cb(routeData);
       return;
     }
@@ -28,6 +29,7 @@
       .then(function (data) {
         routeData = data;
         cumDist = DR.buildCumDist(routeData.route_ab);
+        _buildSpeedZones();
         if (cb) cb(routeData);
       })
       .catch(function (err) {
@@ -38,11 +40,20 @@
           if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 0)) {
             routeData = JSON.parse(xhr.responseText);
             cumDist = DR.buildCumDist(routeData.route_ab);
+            _buildSpeedZones();
             if (cb) cb(routeData);
           }
         };
         xhr.send();
       });
+  }
+
+  /** Build speed limit zones from loaded route data */
+  function _buildSpeedZones() {
+    if (DR.speedLimit && routeData) {
+      var allCams = (routeData.cameras || []).concat(routeData.cameras_offroute || []);
+      DR.speedLimit.buildZones(allCams, routeData.id, routeData.distance_km);
+    }
   }
 
   // ---------- Dynamic route management ----------

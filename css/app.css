@@ -1048,6 +1048,8 @@ body.driving #loadingOverlay {
   border-radius: 16px;
   padding: 10px 24px;
   min-width: 90px;
+  /* anchor for limit badge */
+  overflow: visible;
 }
 
 .speed-value {
@@ -1064,6 +1066,28 @@ body.driving #loadingOverlay {
   color: var(--muted);
   letter-spacing: 1px;
   margin-top: 2px;
+}
+
+/* Waze-style speed limit badge -- map view */
+.speed-limit-badge {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3.5px solid #d32f2f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 16px;
+  color: #111;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  z-index: 2;
 }
 
 .speed-overlay.speed-ok .speed-value {
@@ -1271,6 +1295,33 @@ body.hud-active #loadingOverlay {
   color: #555;
   letter-spacing: 4px;
   margin-top: 4px;
+}
+
+.hud-speed-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+/* Waze-style speed limit badge -- HUD */
+.hud-limit-badge {
+  position: absolute;
+  top: -8px;
+  right: -28px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid #d32f2f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 22px;
+  color: #111;
+  line-height: 1;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  z-index: 2;
 }
 
 .hud-limit {

@@ -548,8 +548,14 @@
     }
   }
 
-  /** Get current speed limit based on next camera */
+  /** Get current speed limit -- zone-based, with camera fallback */
   function getCurrentSpeedLimit() {
+    // Prefer zone-based limit (uses route_km position)
+    if (DR.speedLimit && state.routeKm !== null) {
+      var zoneLimit = DR.speedLimit.update(state.routeKm);
+      if (zoneLimit) return zoneLimit;
+    }
+    // Fallback: next camera limit
     if (!DR.alerts) return null;
     var next = DR.alerts.getNextCamera();
     if (next && next.speed && next.speed !== '?') {

@@ -233,6 +233,7 @@
 <div id="speedOverlay" class="speed-overlay">
     <div id="speedValue" class="speed-value">--</div>
     <div class="speed-unit">km/h</div>
+    <div id="speedLimitBadge" class="speed-limit-badge" style="display:none">--</div>
 </div>
 
 <div id="offRouteBadge" class="off-route-badge">OFF ROUTE</div>
@@ -251,7 +252,10 @@
         </div>
     </div>
     <div class="hud-center">
-        <div id="hudSpeed" class="hud-speed hud-speed-ok">--</div>
+        <div class="hud-speed-wrap">
+            <div id="hudSpeed" class="hud-speed hud-speed-ok">--</div>
+            <div id="hudLimitBadge" class="hud-limit-badge" style="display:none">--</div>
+        </div>
         <div id="hudSpeedUnit" class="hud-speed-unit">km/h</div>
         <div id="hudLimit" class="hud-limit"></div>
     </div>
@@ -288,6 +292,7 @@
 <script src="js/routing.js"></script>
 <script src="js/gps.js"></script>
 <script src="js/alerts.js"></script>
+<script src="js/speed-limit.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/speed-trend.js"></script>
 <script src="js/avg-speed-zones.js"></script>

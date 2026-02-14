@@ -121,11 +121,17 @@
         var spd = Math.round(gpsState.speed);
         speedEl.textContent = spd;
 
-        // Color based on speed vs limit
-        var nextCam = DR.alerts ? DR.alerts.getNextCamera() : null;
+        // Get speed limit from zone system
         var limit = null;
-        if (nextCam && nextCam.speed && nextCam.speed !== '?') {
-          limit = parseInt(nextCam.speed, 10);
+        if (DR.speedLimit && gpsState.routeKm !== null) {
+          limit = DR.speedLimit.update(gpsState.routeKm);
+        }
+        // Fallback: next camera
+        if (!limit) {
+          var nextCam = DR.alerts ? DR.alerts.getNextCamera() : null;
+          if (nextCam && nextCam.speed && nextCam.speed !== '?') {
+            limit = parseInt(nextCam.speed, 10);
+          }
         }
 
         speedEl.classList.remove('hud-speed-ok', 'hud-speed-warn', 'hud-speed-over');
@@ -137,10 +143,8 @@
           } else {
             speedEl.classList.add('hud-speed-ok');
           }
-          if (limitEl) limitEl.textContent = 'LIMIT: ' + limit;
         } else {
           speedEl.classList.add('hud-speed-ok');
-          if (limitEl) limitEl.textContent = '';
         }
       } else {
         speedEl.textContent = '--';
