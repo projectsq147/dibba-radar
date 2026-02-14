@@ -4,6 +4,16 @@
   var DR = window.DibbaRadar = window.DibbaRadar || {};
 
   function init() {
+    // Detect standalone PWA mode
+    DR.isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true;
+    if (DR.isPWA) document.body.classList.add('pwa-standalone');
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function() {});
+    }
+
     // Initialize core modules
     DR.storage.init();
     DR.pins.init();

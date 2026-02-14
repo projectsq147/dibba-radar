@@ -1,6 +1,6 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v17';
+var CACHE_NAME = 'dibba-radar-v18';
 
 var APP_FILES = [
   './',
@@ -30,7 +30,10 @@ var APP_FILES = [
   './js/share.js',
   './js/route-picker.js',
   './js/app.js',
-  './data/routes-index.json'
+  './data/routes-index.json',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/apple-touch-icon.png'
 ];
 
 var CDN_FILES = [
