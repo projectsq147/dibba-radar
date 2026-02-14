@@ -844,6 +844,79 @@ body.hud-active .leaflet-control-attribution {
   animation: pulse 1.5s ease infinite;
 }
 
+/* ======== AVG SPEED ZONE ======== */
+
+.avg-zone {
+  width: 100%;
+  background: rgba(255, 152, 0, 0.15);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: var(--radius-xl);
+  padding: 10px 16px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.avg-zone-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #ff9800;
+  letter-spacing: 0.1em;
+}
+.avg-zone-info {
+  margin-top: 4px;
+}
+.avg-zone-limit {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ff9800;
+}
+.avg-zone-unit {
+  font-size: 12px;
+  color: var(--dim);
+  margin-left: 4px;
+}
+.avg-zone-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 152, 0, 0.2);
+  border-radius: 2px;
+  margin-top: 8px;
+}
+.avg-zone-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #ff9800;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.avg-zone-stats {
+  font-size: 10px;
+  color: var(--dim);
+  margin-top: 4px;
+}
+.avg-zone-avg {
+  margin-left: 12px;
+  color: #ff9800;
+  font-weight: 600;
+}
+
+/* ======== HUD ETA ======== */
+
+.hud-eta {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.hud-eta-time {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.hud-eta-label {
+  font-size: 10px;
+  color: var(--dim);
+  margin-left: 6px;
+  letter-spacing: 0.05em;
+}
+
 /* ======== RESPONSIVE ======== */
 
 @media (max-width: 380px) {
@@ -857,4 +930,41 @@ body.hud-active .leaflet-control-attribution {
 @media (min-width: 768px) {
   .hud-speed { font-size: 100px; }
   .hud-top, .hud-center, .hud-bottom { max-width: 500px; }
+}
+
+/* ======== LANDSCAPE ======== */
+
+@media (orientation: landscape) {
+  .hud-center {
+    padding: 10px 28px 8px;
+  }
+  .hud-center .hud-speed {
+    font-size: 72px;
+  }
+  .hud-top {
+    max-width: 50%;
+    align-self: flex-start;
+  }
+  .hud-bottom {
+    max-width: 50%;
+    align-self: flex-end;
+  }
+  .hud-btn-map {
+    bottom: 12px;
+    left: env(safe-area-inset-left, 16px);
+  }
+  .hud-btn-stop {
+    bottom: 12px;
+    right: env(safe-area-inset-right, 16px);
+  }
+  .top-bar {
+    padding-left: calc(env(safe-area-inset-left, 0px) + 16px);
+  }
+  .search-bar {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .speed-widget {
+    bottom: 100px;
+    left: calc(env(safe-area-inset-left, 0px) + 16px);
+  }
 }

@@ -304,6 +304,36 @@
       progressEl.style.width = pctRoute + '%';
     }
 
+    // ETA calculation
+    var etaContainer = document.getElementById('hudEta');
+    var etaTimeEl = document.getElementById('hudEtaTime');
+    if (etaContainer && etaTimeEl) {
+      var showEta = false;
+      // Check if navigating with route data
+      if (DR.cameras && DR.cameras.isNavigating && DR.cameras.isNavigating()) {
+        var rd = DR.cameras.getRouteData();
+        if (rd && rd.distance_km && gpsState.routeKm !== null && gpsState.routeKm !== undefined) {
+          var remainingKm = rd.distance_km - gpsState.routeKm;
+          if (remainingKm > 0) {
+            var currentSpeed = gpsState.speed;
+            // Use current speed if > 10 km/h, otherwise estimate from route avg
+            var estSpeed = (currentSpeed && currentSpeed > 10) ? currentSpeed :
+              (rd.duration_min > 0 ? (rd.distance_km / rd.duration_min) * 60 : 80);
+            if (estSpeed > 0) {
+              var remainingHours = remainingKm / estSpeed;
+              var etaMs = Date.now() + remainingHours * 3600000;
+              var etaDate = new Date(etaMs);
+              var hh = etaDate.getHours().toString();
+              var mm = etaDate.getMinutes().toString().padStart(2, '0');
+              etaTimeEl.textContent = hh + ':' + mm;
+              showEta = true;
+            }
+          }
+        }
+      }
+      etaContainer.style.display = showEta ? 'block' : 'none';
+    }
+
     // Off route indicator in HUD
     var hudOffRoute = document.getElementById('hudOffRoute');
     if (hudOffRoute) {

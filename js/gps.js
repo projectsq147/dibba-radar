@@ -375,6 +375,11 @@
       DR.alerts.check(state);
     }
 
+    // Check average speed zones
+    if (DR.avgSpeedZones && DR.avgSpeedZones.check) {
+      DR.avgSpeedZones.check(state);
+    }
+
     // Update HUD if visible
     if (DR.hud && DR.hud.isVisible && DR.hud.isVisible()) {
       DR.hud.update(state);
@@ -593,8 +598,14 @@
 
   /** Smooth animation loop for user dot and camera movement */
   function startAnimation() {
-    function animate() {
+    var lastFrameTime = 0;
+    function animate(timestamp) {
       if (!tracking) return;
+      if (timestamp - lastFrameTime < 33) {
+        animFrameId = requestAnimationFrame(animate);
+        return;
+      }
+      lastFrameTime = timestamp;
       var map = DR.mapModule.getMap();
       
       if (targetLat !== null && currentLat !== null) {

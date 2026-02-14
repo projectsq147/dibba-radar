@@ -116,7 +116,26 @@
         </div>
         <div id="hudSpeedUnit" class="hud-unit">km/h</div>
     </div>
+    <!-- Average speed zone indicator -->
+    <div id="avgSpeedZone" class="avg-zone" style="display:none">
+        <div class="avg-zone-label">AVG SPEED ZONE</div>
+        <div class="avg-zone-info">
+            <span id="avgZoneLimit" class="avg-zone-limit">--</span>
+            <span class="avg-zone-unit">km/h</span>
+        </div>
+        <div class="avg-zone-bar">
+            <div id="avgZoneProgress" class="avg-zone-bar-fill"></div>
+        </div>
+        <div class="avg-zone-stats">
+            <span id="avgZoneLength">--</span> km zone
+            <span id="avgZoneAvgSpeed" class="avg-zone-avg">AVG: --</span>
+        </div>
+    </div>
     <div class="hud-bottom">
+        <div id="hudEta" class="hud-eta" style="display:none">
+            <span id="hudEtaTime" class="hud-eta-time">--</span>
+            <span class="hud-eta-label">ETA</span>
+        </div>
         <canvas id="speedTrendCanvas" class="hud-trend" width="300" height="50"></canvas>
         <div id="hudOffRoute" class="hud-off-route">OFF ROUTE</div>
     </div>

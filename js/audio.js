@@ -51,7 +51,7 @@
     playBeepSequence(ctx, [
       { freq: 600, duration: 0.15, delay: 0 },
       { freq: 600, duration: 0.15, delay: 0.25 }
-    ], 0.3);
+    ], 0.6);
   }
 
   /** Play 500m warning: triple-beep, higher pitch, slightly longer */
@@ -64,7 +64,7 @@
       { freq: 800, duration: 0.2, delay: 0 },
       { freq: 800, duration: 0.2, delay: 0.3 },
       { freq: 800, duration: 0.2, delay: 0.6 }
-    ], 0.4);
+    ], 0.7);
   }
 
   /** Play 200m warning: urgent rapid beeps + vibration */
@@ -79,7 +79,7 @@
       { freq: 1000, duration: 0.1, delay: 0.3 },
       { freq: 1000, duration: 0.1, delay: 0.45 },
       { freq: 1000, duration: 0.1, delay: 0.6 }
-    ], 0.5);
+    ], 0.9);
 
     // Trigger vibration if supported
     if ('vibrate' in navigator) {
@@ -97,7 +97,7 @@
       { freq: 880, duration: 0.3, delay: 0 },
       { freq: 660, duration: 0.4, delay: 0.2 },
       { freq: 440, duration: 0.5, delay: 0.4 }
-    ], 0.2);
+    ], 0.6);
   }
 
   /** Play speed warning: continuous low pulsing tone */
@@ -125,11 +125,11 @@
     for (var i = 0; i < 10; i++) { // 5 seconds of pulsing
       var time = now + i * 0.5;
       gainNode.gain.setValueAtTime(0, time);
-      gainNode.gain.linearRampToValueAtTime(0.3, time + 0.1);
+      gainNode.gain.linearRampToValueAtTime(0.7, time + 0.1);
       gainNode.gain.linearRampToValueAtTime(0, time + 0.4);
     }
     
-    pulseGain.gain.value = 0.2;
+    pulseGain.gain.value = 0.6;
     
     oscillator.start(now);
     oscillator.stop(now + 5);
@@ -162,6 +162,32 @@
     });
   }
 
+  /** Play alert by type: 'warning' or 'critical' */
+  function playAlert(type) {
+    if (!isEnabled) return;
+    var ctx = ensureAudioContext();
+    if (!ctx) return;
+
+    if (type === 'critical') {
+      // Rapid triple-beep at 1000Hz, 0.8 volume, 150ms
+      playBeepSequence(ctx, [
+        { freq: 1000, duration: 0.15, delay: 0 },
+        { freq: 1000, duration: 0.15, delay: 0.2 },
+        { freq: 1000, duration: 0.15, delay: 0.4 }
+      ], 0.8);
+      // Vibration for critical
+      if ('vibrate' in navigator) {
+        navigator.vibrate([150, 80, 150, 80, 150]);
+      }
+    } else {
+      // Double-beep warning tone at 800Hz, 0.6 volume, 200ms
+      playBeepSequence(ctx, [
+        { freq: 800, duration: 0.2, delay: 0 },
+        { freq: 800, duration: 0.2, delay: 0.3 }
+      ], 0.6);
+    }
+  }
+
   /** Stop any ongoing speed warning */
   function stopSpeedWarning() {
     // Speed warning naturally stops after 5 seconds
@@ -184,7 +210,7 @@
     // Play a simple test beep
     playBeepSequence(ctx, [
       { freq: 440, duration: 0.2, delay: 0 }
-    ], 0.3);
+    ], 0.7);
   }
 
   function isAudioEnabled() {
@@ -198,6 +224,7 @@
   // Public API
   DR.audio = {
     init: init,
+    playAlert: playAlert,
     play1000mWarning: play1000mWarning,
     play500mWarning: play500mWarning,
     play200mWarning: play200mWarning,

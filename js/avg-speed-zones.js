@@ -9,22 +9,121 @@
   var zoneSpeedSamples = [];
 
   function init() {
-    // Listen for route data changes
-    document.addEventListener('routeDataLoaded', function() {
-      detectAverageSpeedZones();
-    });
-
-    // Listen for GPS updates during driving
-    document.addEventListener('driveUpdate', function(e) {
-      if (e.detail && e.detail.position) {
-        updateZoneTracking(e.detail.position, e.detail.speed || 0);
+    // Detect zones when radar-map data is available
+    var checkData = setInterval(function() {
+      var radarData = DR.radarMap && DR.radarMap.getData ? DR.radarMap.getData() : null;
+      if (radarData && radarData.cameras && radarData.cameras.length > 0) {
+        clearInterval(checkData);
+        detectAverageSpeedZonesFromRadar(radarData.cameras);
       }
+    }, 2000);
+
+    // Also detect from route-based cameras if available
+    if (DR.cameras && DR.cameras.getAllCams) {
+      var cams = DR.cameras.getAllCams();
+      if (cams && cams.length > 0) {
+        detectAverageSpeedZones();
+      }
+    }
+  }
+
+  /** Check current GPS state for avg speed zone tracking (called from gps.js) */
+  function check(gpsState) {
+    if (!gpsState || !gpsState.lat) return;
+    if (avgSpeedZones.length === 0) return;
+
+    var speed = gpsState.speed || 0;
+
+    // Use radar-map nearest camera data for proximity-based zone detection
+    var radarNear = DR.radarMap ? DR.radarMap.getNearestCam() : null;
+
+    // If we have route_km, use route-based zone tracking
+    if (gpsState.routeKm !== null && gpsState.routeKm !== undefined) {
+      updateZoneTracking([gpsState.lat, gpsState.lon], speed);
+      return;
+    }
+
+    // Otherwise use proximity-based detection with radar-map cameras
+    if (radarNear && radarNear.cam && radarNear.dist !== null && radarNear.dist < 5) {
+      // Find zones involving the nearest camera
+      var nearCam = radarNear.cam;
+      var inZone = null;
+      for (var i = 0; i < avgSpeedZones.length; i++) {
+        var zone = avgSpeedZones[i];
+        if (zone.startCamera === nearCam || zone.endCamera === nearCam) {
+          inZone = zone;
+          break;
+        }
+      }
+
+      if (inZone && inZone !== currentZone) {
+        enterAverageSpeedZone(inZone, 0, speed);
+      } else if (!inZone && currentZone) {
+        exitCurrentZone();
+      } else if (currentZone && inZone === currentZone) {
+        // Estimate progress based on distance to cameras
+        zoneSpeedSamples.push({ time: Date.now(), speed: speed, km: 0 });
+        var avgSpd = 0;
+        var total = 0;
+        for (var j = 0; j < zoneSpeedSamples.length; j++) {
+          total += zoneSpeedSamples[j].speed;
+        }
+        avgSpd = zoneSpeedSamples.length > 0 ? total / zoneSpeedSamples.length : 0;
+        updateZoneDisplay(currentZone, 0, avgSpd);
+      }
+    } else if (currentZone) {
+      exitCurrentZone();
+    }
+  }
+
+  /** Detect average speed zones from radar-map camera data */
+  function detectAverageSpeedZonesFromRadar(cameras) {
+    if (!cameras || cameras.length < 2) return;
+
+    // Sort by latitude (rough north-south ordering)
+    var sorted = cameras.slice().sort(function(a, b) {
+      return a.lat - b.lat;
     });
 
-    // Clear zones when drive stops
-    document.addEventListener('driveStop', function() {
-      exitCurrentZone();
-    });
+    var MAX_ZONE_DISTANCE = 5.0; // 5km max
+
+    for (var i = 0; i < sorted.length - 1; i++) {
+      var cam1 = sorted[i];
+      var cam2 = sorted[i + 1];
+
+      var sl1 = cam1.speed_limit;
+      var sl2 = cam2.speed_limit;
+      if (!sl1 || sl1 === '?' || sl1 === 'unknown') continue;
+      if (!sl2 || sl2 === '?' || sl2 === 'unknown') continue;
+      if (sl1 !== sl2) continue;
+
+      // Calculate distance between cameras
+      var dist = quickDistKm(cam1.lat, cam1.lon, cam2.lat, cam2.lon);
+      if (dist > MAX_ZONE_DISTANCE || dist < 0.3) continue;
+
+      var zone = {
+        id: 'rzone_' + i,
+        startKm: 0,
+        endKm: dist,
+        startCamera: cam1,
+        endCamera: cam2,
+        speedLimit: parseInt(sl1, 10),
+        length: dist,
+        active: false
+      };
+      avgSpeedZones.push(zone);
+    }
+
+    console.log('Detected', avgSpeedZones.length, 'potential average speed zones (radar)');
+  }
+
+  /** Quick distance in km */
+  function quickDistKm(lat1, lon1, lat2, lon2) {
+    var R = 6371;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLon = (lon2 - lon1) * Math.PI / 180;
+    var cosLat = Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
+    return R * Math.sqrt(dLat * dLat + dLon * dLon * cosLat * cosLat);
   }
 
   function detectAverageSpeedZones() {
@@ -214,13 +313,16 @@
   }
 
   function updateZoneDisplay(zone, distance, avgSpeed) {
-    // Update any zone progress displays
-    var remaining = zone.length - distance;
-    var progress = Math.min(distance / zone.length, 1);
+    var progress = zone.length > 0 ? Math.min(distance / zone.length, 1) : 0;
 
-    // Could update a progress bar or distance remaining display
-    console.log('Zone progress:', (progress * 100).toFixed(1) + '%', 
-                'Avg speed:', avgSpeed.toFixed(1) + 'km/h');
+    var limitEl = document.getElementById('avgZoneLimit');
+    if (limitEl) limitEl.textContent = zone.speedLimit;
+
+    var progressEl = document.getElementById('avgZoneProgress');
+    if (progressEl) progressEl.style.width = (progress * 100).toFixed(1) + '%';
+
+    var avgEl = document.getElementById('avgZoneAvgSpeed');
+    if (avgEl) avgEl.textContent = 'AVG: ' + Math.round(avgSpeed);
   }
 
   function updateHUDZoneInfo(zone) {
@@ -304,6 +406,7 @@
   // Public API
   DR.avgSpeedZones = {
     init: init,
+    check: check,
     detectAverageSpeedZones: detectAverageSpeedZones,
     drawZonesOnMap: drawZonesOnMap,
     getAverageSpeedZones: getAverageSpeedZones,

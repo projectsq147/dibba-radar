@@ -397,7 +397,8 @@
     map.getSource('labels').setData({ type: 'FeatureCollection', features: [] });
 
     var all = DR.cameras.getAllCams();
-    document.getElementById('camCount').textContent = all.length;
+    var camCountEl = document.getElementById('camCount');
+    if (camCountEl) camCountEl.textContent = all.length;
 
     // Update route km / minutes
     var rkEl = document.getElementById('routeKmVal');
@@ -500,7 +501,8 @@
       features: labelFeatures
     });
 
-    document.getElementById('maxGap').textContent = maxG.toFixed(1);
+    var maxGapEl = document.getElementById('maxGap');
+    if (maxGapEl) maxGapEl.textContent = maxG.toFixed(1);
 
     // Camera markers
     var cameraFeatures = [];
@@ -613,11 +615,11 @@
     var eb = document.getElementById('exportBtn');
     var pinCount = DR.pins.count();
     if (pinCount > 0) {
-      cc.textContent = pinCount + ' PIN' + (pinCount > 1 ? 'S' : '');
-      eb.style.display = 'inline-block';
+      if (cc) cc.textContent = pinCount + ' PIN' + (pinCount > 1 ? 'S' : '');
+      if (eb) eb.style.display = 'inline-block';
     } else {
-      cc.textContent = '';
-      eb.style.display = 'none';
+      if (cc) cc.textContent = '';
+      if (eb) eb.style.display = 'none';
     }
 
     // Update panel text
@@ -626,6 +628,7 @@
 
   function drawDensityBar(all, TK) {
     var bar = document.getElementById('densityBar');
+    if (!bar) return;
     bar.innerHTML = '';
     all.forEach(function (cam) {
       var pct = (cam.route_km / TK) * 100;
@@ -683,9 +686,11 @@
 
   function flipDir() {
     direction = direction === 'ab' ? 'ba' : 'ab';
-    document.getElementById('dirLabel').textContent =
+    var dirLabel = document.getElementById('dirLabel');
+    if (dirLabel) dirLabel.textContent =
       direction === 'ab' ? 'DXB > DIBBA' : 'DIBBA > DXB';
-    document.getElementById('dirArrow').innerHTML =
+    var dirArrow = document.getElementById('dirArrow');
+    if (dirArrow) dirArrow.innerHTML =
       direction === 'ab' ? '&#8594;' : '&#8592;';
     drawMap();
   }
@@ -695,14 +700,12 @@
     var btn = document.getElementById('addBtn');
     var info = document.getElementById('addInfo');
     if (adding) {
-      btn.textContent = 'CANCEL';
-      btn.className = 'active';
-      info.textContent = 'Tap map to place camera';
+      if (btn) { btn.textContent = 'CANCEL'; btn.className = 'active'; }
+      if (info) info.textContent = 'Tap map to place camera';
       document.body.classList.add('add-mode');
     } else {
-      btn.textContent = '+ ADD CAMERA';
-      btn.className = '';
-      info.textContent = 'Pin cameras from Waze';
+      if (btn) { btn.textContent = '+ ADD CAMERA'; btn.className = ''; }
+      if (info) info.textContent = 'Pin cameras from Waze';
       document.body.classList.remove('add-mode');
     }
   }
