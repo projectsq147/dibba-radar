@@ -83,14 +83,24 @@
 
   // ========== Global onclick handlers ==========
 
-  // Existing
-  window.flipDir = function () { DR.mapModule.flipDir(); };
-  window.toggleAdd = function () { DR.mapModule.toggleAdd(); };
-  window.confirmAdd = function (speed) { DR.mapModule.confirmAdd(speed); };
-  window.cancelAdd = function () { DR.mapModule.cancelAdd(); };
-  window.exportPins = function () { DR.mapModule.exportPins(); };
-  window.fetchWaze = function () { DR.waze.fetch(DR.mapModule.getWazeLayer()); };
-  window.removeCustom = function (lat, lon) { DR.mapModule.removeCustom(lat, lon); };
+  // Legend & settings toggles
+  window.toggleLegend = function () {
+    var el = document.getElementById('legend');
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+  window.toggleSettings = function () {
+    var el = document.getElementById('settingsPanel');
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  // Legacy map functions (for modules that still reference them)
+  window.flipDir = function () { if (DR.mapModule) DR.mapModule.flipDir(); };
+  window.toggleAdd = function () { if (DR.mapModule) DR.mapModule.toggleAdd(); };
+  window.confirmAdd = function (speed) { if (DR.mapModule) DR.mapModule.confirmAdd(speed); };
+  window.cancelAdd = function () { if (DR.mapModule) DR.mapModule.cancelAdd(); };
+  window.exportPins = function () { if (DR.mapModule) DR.mapModule.exportPins(); };
+  window.fetchWaze = function () { if (DR.waze && DR.mapModule) DR.waze.fetch(DR.mapModule.getWazeLayer()); };
+  window.removeCustom = function (lat, lon) { if (DR.mapModule) DR.mapModule.removeCustom(lat, lon); };
 
   // Driving
   window.startDrive = function () {

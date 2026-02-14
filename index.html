@@ -2,283 +2,149 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>DIBBA RADAR</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#060a0f">
+<meta name="theme-color" content="#0a0e14">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/radar.css">
 </head>
 <body>
-<div id="scanline"></div>
-<div id="panel">
-    <div class="hdr">
-        <button id="backToRoutes" class="back-button" onclick="backToRouteSelection()">← ROUTES</button>
-        <div class="route-tag" id="routeTag">radar // live</div>
-        <button id="dirToggle" onclick="flipDir()"><span class="arrow" id="dirArrow">&#8594;</span> <span id="dirLabel">DXB &gt; DIBBA</span></button>
-    </div>
-    <h1 id="panelTitle">DUBAI &mdash; DIBBA AL HISN</h1>
-    <div class="sub" id="panelSub">ENOC Al Awir to Wave Cafe &bull; Fixed + live alerts</div>
-    <div class="st">
-        <div class="si"><div class="sv" style="color:var(--warn)" id="camCount">--</div><div class="sl">Cameras</div></div>
-        <div class="si"><div class="sv" style="color:var(--accent)" id="maxGap">--</div><div class="sl">Max Gap</div></div>
-        <div class="si"><div class="sv" style="color:var(--custom)" id="routeKmVal">115.8</div><div class="sl">Route km</div></div>
-        <div class="si"><div class="sv" style="color:var(--s120)" id="routeMinVal">85</div><div class="sl">Minutes</div></div>
-    </div>
-    <div id="densityBar"></div>
-    <div id="wazeStatus"><div class="dot"></div><span id="wazeText">WAZE: CHECKING...</span><button id="refreshBtn" onclick="fetchWaze()">REFRESH</button></div>
 
-    <!-- Search bar -->
-    <div id="searchBar">
-        <div id="searchInputWrap">
-            <input id="searchInput" type="text" placeholder="Where to?" autocomplete="off">
-            <button id="clearSearch" onclick="clearSearch()">&times;</button>
-        </div>
-    </div>
+<!-- Full-screen map -->
+<div id="map"></div>
 
-    <!-- Route info (shown after dynamic route + cameras loaded) -->
-    <div id="routeInfo">
-        <div class="ri-stats">
-            <div class="ri-stat"><span class="ri-val" id="riDist">--</span><span class="ri-label">km</span></div>
-            <div class="ri-stat"><span class="ri-val" id="riTime">--</span><span class="ri-label">min</span></div>
-            <div class="ri-stat"><span class="ri-val" id="riCams">--</span><span class="ri-label">cams</span></div>
-        </div>
-        <button id="goBtn" onclick="startNavigation()">GO</button>
-    </div>
-</div>
-
-<!-- Search results dropdown (outside panel for z-index) -->
-<div id="searchResults"></div>
-
-<!-- Route Picker Home Screen -->
-<div id="routePicker" class="route-picker">
-    <div class="route-picker-header">
-        <h1>DIBBA RADAR</h1>
-        <div class="route-picker-subtitle">Select your route</div>
-        <div class="route-picker-stats" id="routePickerStats">
-            <div class="rp-stat">
-                <span class="rp-stat-value" id="totalRoutes">-</span>
-                <span class="rp-stat-label">ROUTES</span>
-            </div>
-            <div class="rp-stat">
-                <span class="rp-stat-value" id="totalCameras">-</span>
-                <span class="rp-stat-label">CAMERAS</span>
-            </div>
-            <div class="rp-stat">
-                <span class="rp-stat-value" id="totalKm">-</span>
-                <span class="rp-stat-label">KM</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom Route Option -->
-    <div class="route-card route-card-custom" id="customRouteCard" onclick="selectCustomRoute()">
-        <div class="route-card-icon">🎯</div>
-        <div class="route-card-content">
-            <div class="route-card-title">CUSTOM ROUTE</div>
-            <div class="route-card-description">Search and navigate anywhere</div>
-        </div>
-        <div class="route-card-arrow">→</div>
-    </div>
-
-    <!-- Route Cards Container -->
-    <div class="route-cards" id="routeCards">
-        <!-- Route cards will be dynamically added here -->
-    </div>
-
-    <!-- Drive History Button -->
-    <button class="history-button" id="historyButton" onclick="showDriveHistory()">
-        📊 DRIVE HISTORY
+<!-- Top bar: branding + legend toggle -->
+<div id="topBar" class="top-bar">
+    <div class="top-brand">DIBBA<span class="top-brand-accent">RADAR</span></div>
+    <button id="legendBtn" class="top-btn" onclick="toggleLegend()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
     </button>
-
-    <!-- Settings Button -->
-    <button class="settings-button" id="settingsButton" onclick="showSettings()">
-        ⚙️ SETTINGS
+    <button id="settingsBtn" class="top-btn" onclick="toggleSettings()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
 </div>
 
-<!-- Settings Panel -->
-<div id="settingsPanel" class="settings-panel">
-    <div class="settings-header">
-        <h2>SETTINGS</h2>
-        <button class="settings-close" onclick="closeSettings()">✕</button>
-    </div>
-    <div class="settings-content">
-        <div class="setting-group">
-            <div class="setting-label">Units</div>
-            <div class="setting-options">
-                <button class="setting-option active" id="unitsKmh" onclick="setUnits('kmh')">km/h</button>
-                <button class="setting-option" id="unitsMph" onclick="setUnits('mph')">mph</button>
-            </div>
-        </div>
-        <div class="setting-group">
-            <div class="setting-label">Alert Distance</div>
-            <div class="setting-options">
-                <button class="setting-option" id="alertShort" onclick="setAlertDistance('short')">Short</button>
-                <button class="setting-option active" id="alertMedium" onclick="setAlertDistance('medium')">Medium</button>
-                <button class="setting-option" id="alertLong" onclick="setAlertDistance('long')">Long</button>
-            </div>
-        </div>
-        <div class="setting-group">
-            <div class="setting-label">Audio Alerts</div>
-            <div class="setting-toggle">
-                <input type="checkbox" id="audioToggle" checked>
-                <label for="audioToggle" class="toggle-label"></label>
-            </div>
-        </div>
-        <div class="setting-group">
-            <div class="setting-label">Theme</div>
-            <div class="setting-options">
-                <button class="setting-option active" id="themeAuto" onclick="setTheme('auto')">Auto</button>
-                <button class="setting-option" id="themeDark" onclick="setTheme('dark')">Dark</button>
-                <button class="setting-option" id="themeLight" onclick="setTheme('light')">Light</button>
-            </div>
-        </div>
-    </div>
+<!-- Legend overlay -->
+<div id="legend" class="legend" style="display:none">
+    <div class="legend-title">CAMERA DENSITY</div>
+    <div class="legend-row"><span class="legend-line" style="background:#ff1744"></span> Heavy (&lt;1 km gap)</div>
+    <div class="legend-row"><span class="legend-line" style="background:#ff6d00"></span> Moderate (1-2.5 km)</div>
+    <div class="legend-row"><span class="legend-line" style="background:#ffd600"></span> Light (2.5-5 km)</div>
+    <div class="legend-row"><span class="legend-line" style="background:#00e676"></span> Clear (&gt;5 km)</div>
+    <div class="legend-sep"></div>
+    <div class="legend-title">CAMERAS</div>
+    <div class="legend-row"><span class="legend-dot" style="background:#ff1744"></span> 120+ km/h</div>
+    <div class="legend-row"><span class="legend-dot" style="background:#ff6d00"></span> 80-119 km/h</div>
+    <div class="legend-row"><span class="legend-dot" style="background:#ffd600"></span> &lt;80 km/h</div>
+    <div class="legend-row"><span class="legend-dot" style="background:#78909c"></span> Unknown limit</div>
 </div>
 
-<!-- Drive History Panel -->
-<div id="historyPanel" class="history-panel">
-    <div class="history-header">
-        <h2>DRIVE HISTORY</h2>
-        <button class="history-close" onclick="closeDriveHistory()">✕</button>
-    </div>
-    <div class="history-stats" id="historyStats">
-        <div class="hist-stat">
-            <span class="hist-stat-value">-</span>
-            <span class="hist-stat-label">Total Drives</span>
-        </div>
-        <div class="hist-stat">
-            <span class="hist-stat-value">-</span>
-            <span class="hist-stat-label">Total km</span>
-        </div>
-        <div class="hist-stat">
-            <span class="hist-stat-value">-%</span>
-            <span class="hist-stat-label">Compliance</span>
-        </div>
-    </div>
-    <div class="history-content" id="historyContent">
-        <!-- Drive history entries will be added here -->
-    </div>
+<!-- Speed widget (map view, Waze-style circle) -->
+<div id="speedOverlay" class="speed-widget">
+    <div id="speedValue" class="speed-val">--</div>
+    <div class="speed-unit">km/h</div>
+    <div id="speedLimitBadge" class="speed-limit-badge">--</div>
 </div>
 
-<!-- Share Panel -->
-<div id="sharePanel" class="share-panel">
-    <div class="share-header">
-        <h2>SHARE ROUTE</h2>
-        <button class="share-close" onclick="closeSharePanel()">✕</button>
-    </div>
-    <div class="share-content">
-        <div class="share-url" id="shareUrl"></div>
-        <div class="share-buttons">
-            <button class="share-btn" onclick="shareRoute('url')">Copy URL</button>
-            <button class="share-btn" onclick="shareRoute('text')">Share Text</button>
-            <button class="share-btn" onclick="shareRoute('native')">Share</button>
-        </div>
-    </div>
-</div>
-
-<!-- Loading overlay -->
-<div id="loadingOverlay">
-    <div id="loadingText">ROUTING...</div>
-</div>
-
-<div id="lg">
-    <div class="li"><div class="ld" style="background:var(--s120);box-shadow:0 0 5px var(--s120)"></div>120 km/h</div>
-    <div class="li"><div class="ld" style="background:var(--s100);box-shadow:0 0 5px var(--s100)"></div>100 km/h</div>
-    <div class="li"><div class="ld" style="background:var(--unk);box-shadow:0 0 5px var(--unk)"></div>Unknown</div>
-    <div class="li"><div class="ld" style="background:var(--custom);box-shadow:0 0 5px var(--custom)"></div>Your pins</div>
-    <div class="li"><div class="ld" style="background:#ffc107;box-shadow:0 0 5px #ffc107"></div>Waze live</div>
-    <div class="li"><div class="ld" style="background:var(--offr);opacity:0.5"></div>Off-route</div>
-    <div class="li"><div class="ll" style="background:var(--accent)"></div>Open &gt;5km</div>
-    <div class="li"><div class="ll" style="background:#4ade80"></div>Clear 3-5km</div>
-    <div class="li"><div class="ll" style="background:var(--s120)"></div>1-3km</div>
-    <div class="li"><div class="ll" style="background:var(--warn)"></div>&lt;1km</div>
-</div>
-<div id="addMode">
-    <button id="addBtn" onclick="toggleAdd()">+ ADD CAMERA</button>
-    <div id="customCount"></div>
-    <div id="addInfo">Pin cameras from Waze</div>
-    <button id="exportBtn" onclick="exportPins()">COPY PINS</button>
-</div>
-<div id="overlay" onclick="cancelAdd()"></div>
-<div id="speedPicker">
-    <h3>SPEED LIMIT</h3>
-    <div class="spd-grid">
-        <button class="spd-btn" onclick="confirmAdd('60')">60</button>
-        <button class="spd-btn" onclick="confirmAdd('80')">80</button>
-        <button class="spd-btn" onclick="confirmAdd('100')">100</button>
-        <button class="spd-btn" onclick="confirmAdd('120')">120</button>
-        <button class="spd-btn" onclick="confirmAdd('140')">140</button>
-        <button class="spd-btn" onclick="confirmAdd('?')">?</button>
-    </div>
-    <button id="cancelAdd" onclick="cancelAdd()">CANCEL</button>
-</div>
-
-<!-- Phase 1B+1C+1D: Driving Mode UI -->
-<button id="startDriveBtn" onclick="startDrive()">START DRIVE</button>
-<button id="stopDriveBtn" onclick="stopDrive()">STOP</button>
-<button id="centerBtn" onclick="centerOnMe()">CENTER</button>
-<button id="shareBtn" onclick="openSharePanel()">SHARE</button>
-
+<!-- Camera proximity alert -->
 <div id="alertBanner" class="alert-banner">
     <div id="alertText" class="alert-text"></div>
     <div id="alertLimit" class="alert-limit"></div>
 </div>
 
-<div id="speedOverlay" class="speed-overlay">
-    <div id="speedValue" class="speed-value">--</div>
-    <div class="speed-unit">km/h</div>
-    <div id="speedLimitBadge" class="speed-limit-badge" style="display:none">--</div>
-</div>
+<!-- Drive button -->
+<button id="startDriveBtn" class="drive-btn" onclick="startDrive()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    DRIVE
+</button>
+<button id="stopDriveBtn" class="stop-btn" onclick="stopDrive()">STOP</button>
+<button id="centerBtn" class="center-btn" onclick="centerOnMe()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+</button>
 
-<div id="offRouteBadge" class="off-route-badge">OFF ROUTE</div>
-
+<!-- Slow down flash -->
 <div id="slowDownOverlay" class="slow-down-overlay">
     <div class="slow-down-text">SLOW DOWN</div>
 </div>
 
-<!-- HUD Container -->
-<div id="hudContainer" class="hud-container" onclick="hudTap(event)">
+<!-- Off route badge -->
+<div id="offRouteBadge" class="off-route-badge">OFF ROUTE</div>
+
+<!-- HUD (driving overlay on top of map) -->
+<div id="hudContainer" class="hud" onclick="hudTap(event)">
     <div class="hud-top">
-        <div id="hudCamLabel" class="hud-cam-label">CAMERA IN</div>
-        <div id="hudCamDist" class="hud-cam-dist">--</div>
-        <div class="hud-cam-bar">
-            <div id="hudCamBar" class="hud-cam-bar-fill"></div>
-        </div>
+        <div id="hudCamLabel" class="hud-label">CAMERA IN</div>
+        <div id="hudCamDist" class="hud-dist">--</div>
+        <div class="hud-bar"><div id="hudCamBar" class="hud-bar-fill"></div></div>
     </div>
     <div class="hud-center">
         <div class="hud-speed-wrap">
             <div id="hudSpeed" class="hud-speed hud-speed-ok">--</div>
-            <div id="hudLimitBadge" class="hud-limit-badge" style="display:none">--</div>
+            <div id="hudLimitBadge" class="hud-limit-badge">--</div>
         </div>
-        <div id="hudSpeedUnit" class="hud-speed-unit">km/h</div>
-        <div id="hudLimit" class="hud-limit"></div>
+        <div id="hudSpeedUnit" class="hud-unit">km/h</div>
     </div>
     <div class="hud-bottom">
-        <div class="hud-bottom-row">
-            <div id="hudGap" class="hud-gap"></div>
-            <div id="hudNextInfo" class="hud-next-info"></div>
-        </div>
-        <div class="hud-progress-bar">
-            <div id="hudProgress" class="hud-progress-fill"></div>
-        </div>
-        <canvas id="speedTrendCanvas" class="speed-trend-canvas" width="300" height="60"></canvas>
+        <canvas id="speedTrendCanvas" class="hud-trend" width="300" height="50"></canvas>
         <div id="hudOffRoute" class="hud-off-route">OFF ROUTE</div>
-        <div id="avgSpeedZone" class="avg-speed-zone">AVG SPEED ZONE - <span id="avgZoneLength">2.4</span>km</div>
     </div>
-    <button id="hudMapBtn" class="hud-map-btn" onclick="hudToMap(event)">MAP</button>
-    <button id="hudStopBtn" class="hud-stop-btn" onclick="hudStop(event)">STOP</button>
+    <button class="hud-btn hud-btn-map" onclick="hudToMap(event)">MAP</button>
+    <button class="hud-btn hud-btn-stop" onclick="hudStop(event)">STOP</button>
 </div>
 
-<div id="attrib">Data: OpenStreetMap + Waze &bull; Built by Runman</div>
-<div id="map"></div>
+<!-- Settings panel -->
+<div id="settingsPanel" class="settings-panel" style="display:none">
+    <div class="settings-header">
+        <span>SETTINGS</span>
+        <button onclick="toggleSettings()">x</button>
+    </div>
+    <div class="settings-body">
+        <div class="setting-row">
+            <span>Units</span>
+            <div class="setting-pills">
+                <button class="pill active" id="unitsKmh" onclick="setUnits('kmh')">km/h</button>
+                <button class="pill" id="unitsMph" onclick="setUnits('mph')">mph</button>
+            </div>
+        </div>
+        <div class="setting-row">
+            <span>Alert Distance</span>
+            <div class="setting-pills">
+                <button class="pill" id="alertShort" onclick="setAlertDistance('short')">Short</button>
+                <button class="pill active" id="alertMedium" onclick="setAlertDistance('medium')">Medium</button>
+                <button class="pill" id="alertLong" onclick="setAlertDistance('long')">Long</button>
+            </div>
+        </div>
+        <div class="setting-row">
+            <span>Audio</span>
+            <label class="switch"><input type="checkbox" id="audioToggle" checked><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+            <span>Theme</span>
+            <div class="setting-pills">
+                <button class="pill active" id="themeAuto" onclick="setTheme('auto')">Auto</button>
+                <button class="pill" id="themeDark" onclick="setTheme('dark')">Dark</button>
+                <button class="pill" id="themeLight" onclick="setTheme('light')">Light</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-<!-- JS modules in dependency order -->
+<!-- Hidden elements needed by modules -->
+<div id="panel" style="display:none"></div>
+<div id="routePicker" style="display:none"></div>
+<div id="searchResults" style="display:none"></div>
+<div id="loadingOverlay" style="display:none"><div id="loadingText"></div></div>
+<div id="overlay" style="display:none"></div>
+<div id="speedPicker" style="display:none"></div>
+<div id="historyPanel" style="display:none"></div>
+<div id="sharePanel" style="display:none"></div>
+
+<!-- JS modules -->
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/settings.js"></script>
