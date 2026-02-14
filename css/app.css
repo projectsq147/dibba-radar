@@ -1170,18 +1170,22 @@ body.driving #loadingOverlay {
   right: 0;
   bottom: 0;
   z-index: 3000;
-  background: #000;
+  background: transparent;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
-  padding-top: env(safe-area-inset-top, 20px);
-  padding-bottom: env(safe-area-inset-bottom, 20px);
+  padding: 12px;
+  padding-top: env(safe-area-inset-top, 12px);
+  padding-bottom: env(safe-area-inset-bottom, 12px);
   color: #fff;
   font-family: var(--mono);
   -webkit-user-select: none;
   user-select: none;
   cursor: default;
+  pointer-events: none;
+}
+.hud-container > * {
+  pointer-events: auto;
 }
 
 body.hud-active #panel,
@@ -1195,7 +1199,9 @@ body.hud-active #centerBtn,
 body.hud-active #offRouteBadge,
 body.hud-active #slowDownOverlay,
 body.hud-active #searchResults,
-body.hud-active #loadingOverlay {
+body.hud-active #loadingOverlay,
+body.hud-active .leaflet-control-zoom,
+body.hud-active .leaflet-control-attribution {
   display: none !important;
 }
 
@@ -1204,17 +1210,22 @@ body.hud-active #loadingOverlay {
   width: 100%;
   text-align: center;
   flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 16px;
+  padding: 10px 16px;
 }
 
 .hud-cam-label {
-  font-size: 14px;
-  color: #666;
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
   letter-spacing: 3px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .hud-cam-dist {
-  font-size: 48px;
+  font-size: 36px;
   font-weight: 700;
   color: var(--accent);
   line-height: 1;
@@ -1232,12 +1243,12 @@ body.hud-active #loadingOverlay {
 }
 
 .hud-cam-bar {
-  width: 80%;
+  width: 100%;
   max-width: 300px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-  margin: 12px auto 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  margin: 8px auto 0;
   overflow: hidden;
 }
 
@@ -1264,15 +1275,21 @@ body.hud-active #loadingOverlay {
 /* HUD Center: Speed */
 .hud-center {
   text-align: center;
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px;
+  padding: 12px 28px 10px;
+  margin: auto 0;
 }
 
 .hud-speed {
-  font-size: 120px;
+  font-size: 80px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -2px;
@@ -1337,6 +1354,11 @@ body.hud-active #loadingOverlay {
 .hud-bottom {
   width: 100%;
   flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 16px;
+  padding: 10px 12px;
 }
 
 .hud-bottom-row {
@@ -1411,17 +1433,21 @@ body.hud-active #loadingOverlay {
 .hud-map-btn {
   bottom: 20px;
   left: 20px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #666;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.7);
+  color: #aaa;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .hud-stop-btn {
   bottom: 20px;
   right: 20px;
-  background: rgba(255, 59, 59, 0.1);
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 59, 59, 0.2);
+  background: rgba(180, 30, 30, 0.75);
+  color: #fff;
+  border: 1px solid rgba(255, 59, 59, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .hud-map-btn:active,
@@ -2060,6 +2086,8 @@ input[type="checkbox"]:checked + .toggle-label::after {
 
 body.hud-active .speed-trend-canvas {
   display: block;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* === Average Speed Zone === */

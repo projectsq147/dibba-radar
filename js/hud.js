@@ -20,6 +20,14 @@
     var speedOverlay = document.getElementById('speedOverlay');
     if (speedOverlay) speedOverlay.style.display = 'none';
 
+    // Zoom map in for driving view
+    if (DR.mapModule) {
+      var map = DR.mapModule.getMap();
+      if (map && map.getZoom() < 15) {
+        map.setZoom(15, { animate: true });
+      }
+    }
+
     // Start continuous update loop
     startUpdateLoop();
 
