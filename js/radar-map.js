@@ -12,6 +12,9 @@
   var flashRedTimer = null;
   var flashGreenTimer = null;
 
+  // Shared state so HUD can read nearest camera info without fighting
+  var nearestCamState = { dist: null, cam: null };
+
   var radarCamerasSourceId = 'radar-cameras-source';
   var radarCamerasLayerId = 'radar-cameras-layer';
   var roadSegmentsSourceId = 'road-segments-source';
@@ -257,7 +260,7 @@
   function checkNearbyCameras() {
     if (!data || !data.cameras) return;
     var st = DR.gps ? DR.gps.getState() : {};
-    if (!st.lat) return;
+    if (!st.lat) { nearestCamState.dist = null; nearestCamState.cam = null; return; }
 
     var closest = null;
     var closestDist = Infinity;
@@ -271,36 +274,24 @@
       }
     }
 
-    // Update the speed limit badge based on nearest camera
+    // Store state for HUD to read (single source of truth)
+    nearestCamState.dist = (closest && closestDist < 5) ? closestDist : null;
+    nearestCamState.cam = (closest && closestDist < 5) ? closest : null;
+
+    // Update the speed limit badge on the map-view widget only
     var limitBadge = document.getElementById('speedLimitBadge');
-    var hudLimitBadge = document.getElementById('hudLimitBadge');
     if (closest && closestDist < 5) {
       var sl = closest.speed_limit;
       if (sl && sl !== '?' && sl !== 'unknown') {
-        var limitVal = sl;
-        if (limitBadge) { limitBadge.textContent = limitVal; limitBadge.style.display = 'flex'; }
-        if (hudLimitBadge) { hudLimitBadge.textContent = limitVal; hudLimitBadge.style.display = 'flex'; }
+        if (limitBadge) { limitBadge.textContent = sl; limitBadge.style.display = 'flex'; }
       }
     }
 
     // Alert thresholds
-    var alertDist = 2; // km
     var warningDist = 1;
     var criticalDist = 0.3;
 
-    if (closest && closestDist < alertDist) {
-      // Update HUD camera distance
-      var camDistEl = document.getElementById('hudCamDist');
-      if (camDistEl) {
-        if (closestDist < 0.05) {
-          camDistEl.textContent = 'NOW';
-        } else if (closestDist < 1) {
-          camDistEl.textContent = (closestDist * 1000).toFixed(0) + 'm';
-        } else {
-          camDistEl.textContent = closestDist.toFixed(1) + ' km';
-        }
-      }
-
+    if (closest && closestDist < 2) {
       // Trigger audio alert
       if (closestDist < warningDist && DR.audio) {
         var camKey = closest.lat + ',' + closest.lon;
@@ -323,27 +314,20 @@
         var isOver = speed > margin;
 
         if (isOver && !wasOverMargin) {
-          // Just went over -- RED flash
           wasOverMargin = true;
           showFlash('red', limitNum, Math.round(speed));
         } else if (isOver && wasOverMargin) {
-          // Still over -- keep red visible
           keepFlashRed();
         } else if (!isOver && wasOverMargin) {
-          // Dropped back under -- GREEN flash
           wasOverMargin = false;
           showFlash('green');
         }
       } else if (closestDist >= 1.5) {
-        // Out of range, reset
         if (wasOverMargin) wasOverMargin = false;
         hideFlashes();
       }
 
     } else {
-      // Clear HUD
-      var camDistEl2 = document.getElementById('hudCamDist');
-      if (camDistEl2) camDistEl2.textContent = '--';
       lastAlertCam = null;
       if (wasOverMargin) wasOverMargin = false;
       hideFlashes();
@@ -434,6 +418,9 @@
   function getData() { return data; }
   function isLoaded() { return loaded; }
 
+  /** Get nearest camera state (for HUD to read) */
+  function getNearestCam() { return nearestCamState; }
+
   DR.radarMap = {
     init: init,
     render: render,
@@ -441,6 +428,7 @@
     startNearbyAlerts: startNearbyAlerts,
     stopNearbyAlerts: stopNearbyAlerts,
     checkNearbyCameras: checkNearbyCameras,
+    getNearestCam: getNearestCam,
     getData: getData,
     isLoaded: isLoaded
   };

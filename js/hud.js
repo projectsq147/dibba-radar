@@ -129,14 +129,20 @@
         var spd = Math.round(gpsState.speed);
         speedEl.textContent = spd;
 
-        // Get speed limit from zone system
+        // Get speed limit: zone system > radar-map nearest > route alerts
         var limit = null;
         if (DR.speedLimit && gpsState.routeKm !== null) {
           limit = DR.speedLimit.update(gpsState.routeKm);
         }
-        // Fallback: next camera
         if (!limit) {
-          var nextCam = DR.alerts ? DR.alerts.getNextCamera() : null;
+          var rn = DR.radarMap ? DR.radarMap.getNearestCam() : null;
+          if (rn && rn.cam) {
+            var rsl = rn.cam.speed_limit || rn.cam.speed;
+            if (rsl && rsl !== '?' && rsl !== 'unknown') limit = parseInt(rsl, 10);
+          }
+        }
+        if (!limit && DR.alerts) {
+          var nextCam = DR.alerts.getNextCamera();
           if (nextCam && nextCam.speed && nextCam.speed !== '?') {
             limit = parseInt(nextCam.speed, 10);
           }
@@ -162,13 +168,30 @@
       }
     }
 
-    // Camera distance
+    // Camera distance -- use radar-map's nearby state as primary source,
+    // fall back to route-based alerts if available
     var camDistEl = document.getElementById('hudCamDist');
     var camLabelEl = document.getElementById('hudCamLabel');
     var camBarEl = document.getElementById('hudCamBar');
 
-    var nextDist = DR.alerts ? DR.alerts.getNextCameraDistance() : null;
-    var nextCamObj = DR.alerts ? DR.alerts.getNextCamera() : null;
+    var nextDist = null;
+    var nextCamObj = null;
+    var camLabel = 'CAMERA';
+
+    // Primary: radar-map nearby camera (works in radar/free-drive mode)
+    var radarNear = DR.radarMap ? DR.radarMap.getNearestCam() : null;
+    if (radarNear && radarNear.dist !== null) {
+      nextDist = radarNear.dist;
+      nextCamObj = radarNear.cam;
+      camLabel = 'CAMERA';
+    }
+
+    // Fallback: route-based alerts (works in navigation mode)
+    if (nextDist === null && DR.alerts) {
+      nextDist = DR.alerts.getNextCameraDistance();
+      nextCamObj = DR.alerts.getNextCamera();
+      if (nextCamObj && nextCamObj.source === 'waze_police') camLabel = 'POLICE';
+    }
 
     if (camDistEl) {
       if (nextDist !== null) {
@@ -190,11 +213,23 @@
 
     if (camLabelEl) {
       if (nextCamObj) {
-        var src = nextCamObj.source === 'waze_police' ? 'POLICE' : 'CAMERA';
-        camLabelEl.textContent = src + ' IN';
+        camLabelEl.textContent = camLabel + ' IN';
       } else {
         camLabelEl.textContent = 'NO CAMERA';
       }
+    }
+
+    // Update HUD limit badge from nearest camera
+    var hudLimitBadge = document.getElementById('hudLimitBadge');
+    if (hudLimitBadge && nextCamObj) {
+      var sl = nextCamObj.speed_limit || nextCamObj.speed;
+      if (sl && sl !== '?' && sl !== 'unknown') {
+        hudLimitBadge.textContent = sl;
+      } else {
+        hudLimitBadge.textContent = '--';
+      }
+    } else if (hudLimitBadge) {
+      hudLimitBadge.textContent = '--';
     }
 
     // Camera proximity bar (fills as you approach, 5km range)
