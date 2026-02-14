@@ -11,6 +11,9 @@
   var nearbyAlertActive = false;
   var lastAlertCam = null;
   var nearbyCheckInterval = null;
+  var wasOverMargin = false;  // for green flash on recovery
+  var flashRedTimer = null;
+  var flashGreenTimer = null;
 
   /** Initialize radar map mode */
   function init(cb) {
@@ -217,12 +220,88 @@
           }
         }
       }
+
+      // UAE +20 margin flash system
+      var camLimit = closest.speed_limit;
+      var speed = st.speed;
+      if (camLimit && camLimit !== '?' && speed !== null && closestDist < 1.5) {
+        var limitNum = parseInt(camLimit, 10);
+        var margin = limitNum + 20; // UAE fine threshold
+        var isOver = speed > margin;
+
+        if (isOver && !wasOverMargin) {
+          // Just went over -- RED flash
+          wasOverMargin = true;
+          showFlash('red', limitNum, Math.round(speed));
+        } else if (isOver && wasOverMargin) {
+          // Still over -- keep red visible
+          keepFlashRed();
+        } else if (!isOver && wasOverMargin) {
+          // Dropped back under -- GREEN flash
+          wasOverMargin = false;
+          showFlash('green');
+        }
+      } else if (closestDist >= 1.5) {
+        // Out of range, reset
+        if (wasOverMargin) wasOverMargin = false;
+        hideFlashes();
+      }
+
     } else {
       // Clear HUD
       var camDistEl2 = document.getElementById('hudCamDist');
       if (camDistEl2) camDistEl2.textContent = '--';
       lastAlertCam = null;
+      if (wasOverMargin) wasOverMargin = false;
+      hideFlashes();
     }
+  }
+
+  /** Show red or green flash */
+  function showFlash(color, limit, speed) {
+    var red = document.getElementById('flashRed');
+    var green = document.getElementById('flashGreen');
+    if (color === 'red') {
+      if (green) green.style.display = 'none';
+      if (red) {
+        red.style.display = 'flex';
+        var sub = document.getElementById('flashRedSub');
+        if (sub && limit) sub.textContent = Math.round(speed) + ' / ' + (limit + 20) + ' km/h';
+      }
+      // Auto-hide after 3s if speed drops (keepFlashRed refreshes it)
+      clearTimeout(flashRedTimer);
+      flashRedTimer = setTimeout(function () {
+        if (red) red.style.display = 'none';
+      }, 3000);
+    } else {
+      if (red) red.style.display = 'none';
+      clearTimeout(flashRedTimer);
+      if (green) green.style.display = 'flex';
+      clearTimeout(flashGreenTimer);
+      flashGreenTimer = setTimeout(function () {
+        if (green) green.style.display = 'none';
+      }, 1500);
+    }
+  }
+
+  /** Keep red flash alive while still over */
+  function keepFlashRed() {
+    var red = document.getElementById('flashRed');
+    if (red && red.style.display !== 'flex') red.style.display = 'flex';
+    clearTimeout(flashRedTimer);
+    flashRedTimer = setTimeout(function () {
+      if (red) red.style.display = 'none';
+    }, 1500);
+  }
+
+  /** Hide all flashes */
+  function hideFlashes() {
+    var red = document.getElementById('flashRed');
+    var green = document.getElementById('flashGreen');
+    if (red) red.style.display = 'none';
+    if (green) green.style.display = 'none';
+    clearTimeout(flashRedTimer);
+    clearTimeout(flashGreenTimer);
   }
 
   /** Quick distance in km (equirectangular approximation) */

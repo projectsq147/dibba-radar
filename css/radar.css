@@ -40,8 +40,11 @@ html, body {
 
 #map {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: -15%; left: -15%; right: -15%; bottom: -15%;
+  width: 130%; height: 130%;
   z-index: 0;
+  transition: transform 0s linear;
+  will-change: transform;
 }
 
 .leaflet-control-zoom,
@@ -456,22 +459,51 @@ body.driving .center-btn { display: flex; }
 
 /* ======== SLOW DOWN / OFF ROUTE ======== */
 
-.slow-down-overlay {
+/* Speed flash overlays (UAE +20 km/h margin) */
+.flash-overlay {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 2000;
-  background: rgba(239, 68, 68, 0.08);
-  align-items: center; justify-content: center;
+  z-index: 5000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
 }
-.slow-down-text {
+.flash-red {
+  background: rgba(239, 68, 68, 0.18);
+  animation: flashPulse 0.5s ease infinite;
+  border: 4px solid rgba(239, 68, 68, 0.5);
+}
+.flash-green {
+  background: rgba(34, 197, 94, 0.15);
+  border: 4px solid rgba(34, 197, 94, 0.4);
+}
+.flash-text {
   font-family: var(--font);
-  font-size: 48px;
+  font-size: 42px;
   font-weight: 700;
   color: var(--destructive);
-  letter-spacing: 0.05em;
-  animation: pulse 0.8s ease infinite;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
 }
+.flash-text-ok {
+  color: var(--cam-green);
+  text-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+}
+.flash-sub {
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+@keyframes flashPulse {
+  0%, 100% { background: rgba(239, 68, 68, 0.18); }
+  50% { background: rgba(239, 68, 68, 0.35); }
+}
+
+.slow-down-overlay { display: none; }
 
 .off-route-badge {
   display: none;

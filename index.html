@@ -88,10 +88,16 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
 </button>
 
-<!-- Slow down flash -->
-<div id="slowDownOverlay" class="slow-down-overlay">
-    <div class="slow-down-text">SLOW DOWN</div>
+<!-- Speed flash overlays (UAE +20 margin) -->
+<div id="flashRed" class="flash-overlay flash-red">
+    <div class="flash-text">SLOW DOWN</div>
+    <div class="flash-sub" id="flashRedSub"></div>
 </div>
+<div id="flashGreen" class="flash-overlay flash-green">
+    <div class="flash-text flash-text-ok">CLEAR</div>
+</div>
+<!-- Legacy slow down (kept for module compat) -->
+<div id="slowDownOverlay" class="slow-down-overlay" style="display:none"></div>
 
 <!-- Off route badge -->
 <div id="offRouteBadge" class="off-route-badge">OFF ROUTE</div>

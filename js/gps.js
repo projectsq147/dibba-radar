@@ -30,6 +30,8 @@
   var animFrameId = null;
   var targetLat = null, targetLon = null;
   var currentLat = null, currentLon = null;
+  var targetHeading = 0, currentHeading = 0;
+  var mapRotationEnabled = true;
 
   function getState() { return state; }
   function isTracking() { return tracking; }
@@ -249,6 +251,14 @@
     currentLon = null;
     targetLat = null;
     targetLon = null;
+    currentHeading = 0;
+    targetHeading = 0;
+
+    // Reset map rotation
+    var mapEl = document.getElementById('map');
+    if (mapEl) {
+      mapEl.style.transform = 'rotate(0deg)';
+    }
 
     // Update UI
     document.body.classList.remove('driving');
@@ -406,6 +416,9 @@
     var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
     var bearing = Math.atan2(y, x) * 180 / Math.PI;
     state.heading = (bearing + 360) % 360;
+    if (mapRotationEnabled) {
+      targetHeading = state.heading;
+    }
   }
 
   /** Snap current position to route */
@@ -531,11 +544,26 @@
         if (blueDotCircle) {
           blueDotCircle.setLatLng([currentLat, currentLon]);
         }
-        // Smooth map pan to interpolated position
+        // Smooth map pan + rotation to interpolated position
         if (autoCenter) {
           var map = DR.mapModule ? DR.mapModule.getMap() : null;
           if (map) {
             map.setView([currentLat, currentLon], map.getZoom(), { animate: false });
+          }
+        }
+        // Rotate map to heading (direction of travel points up)
+        if (mapRotationEnabled && tracking) {
+          // Smooth angle interpolation (shortest path around 360)
+          var diff = targetHeading - currentHeading;
+          if (diff > 180) diff -= 360;
+          if (diff < -180) diff += 360;
+          currentHeading += diff * 0.12;
+          currentHeading = ((currentHeading % 360) + 360) % 360;
+
+          var mapEl = document.getElementById('map');
+          if (mapEl) {
+            mapEl.style.transform = 'rotate(' + (-currentHeading) + 'deg)';
+            mapEl.style.transformOrigin = '50% 50%';
           }
         }
       }
