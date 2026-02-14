@@ -333,14 +333,12 @@
     // Check off-route
     checkOffRoute();
 
-    // Auto-center map
-    if (autoCenter) {
+    // Auto-center handled by animation loop for smooth panning
+    // Only bump zoom if needed on first fix
+    if (autoCenter && !animFrameId) {
       var map = DR.mapModule.getMap();
-      if (map) {
-        map.setView([coords.latitude, coords.longitude], Math.max(map.getZoom(), 14), {
-          animate: true,
-          duration: 0.5
-        });
+      if (map && map.getZoom() < 14) {
+        map.setZoom(14, { animate: false });
       }
     }
 
@@ -521,8 +519,8 @@
     function animate() {
       if (!tracking) return;
       if (targetLat !== null && currentLat !== null) {
-        // Lerp toward target
-        var lerp = 0.15;
+        // Lerp toward target (0.3 = snappy, catches up fast)
+        var lerp = 0.3;
         currentLat += (targetLat - currentLat) * lerp;
         currentLon += (targetLon - currentLon) * lerp;
 
@@ -532,6 +530,13 @@
         }
         if (blueDotCircle) {
           blueDotCircle.setLatLng([currentLat, currentLon]);
+        }
+        // Smooth map pan to interpolated position
+        if (autoCenter) {
+          var map = DR.mapModule ? DR.mapModule.getMap() : null;
+          if (map) {
+            map.setView([currentLat, currentLon], map.getZoom(), { animate: false });
+          }
         }
       }
       animFrameId = requestAnimationFrame(animate);
@@ -697,9 +702,9 @@
         console.log('Passive GPS:', err.code, err.message);
       },
       {
-        enableHighAccuracy: true, // get accurate position from the start
-        maximumAge: 5000,
-        timeout: 10000
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 8000
       }
     );
   }

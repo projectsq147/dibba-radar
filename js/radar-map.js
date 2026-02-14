@@ -144,7 +144,7 @@
   /** Start nearby camera alerts (runs during driving without a specific route) */
   function startNearbyAlerts() {
     if (nearbyCheckInterval) return;
-    nearbyCheckInterval = setInterval(checkNearbyCameras, 1000);
+    nearbyCheckInterval = setInterval(checkNearbyCameras, 250);
   }
 
   /** Stop nearby alerts */
