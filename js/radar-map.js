@@ -54,7 +54,13 @@
   /** Render cameras and road segments on map */
   function render() {
     var map = DR.mapModule ? DR.mapModule.getMap() : null;
-    if (!map || !data || !map.isStyleLoaded()) return;
+    if (!map || !data) return;
+
+    // Wait for map to be ready (style loaded, base layers added)
+    if (!DR.mapModule.isReady()) {
+      DR.mapModule.onReady(function() { render(); });
+      return;
+    }
 
     // Draw colored road segments first (under cameras)
     var segs = data.segments || [];

@@ -263,19 +263,24 @@
       if (startIdx < endIdx) {
         var zonePoints = routeData.route_ab.slice(startIdx, endIdx + 1);
         
-        var zoneLine = L.polyline(zonePoints, {
-          color: '#ff8c00',
-          weight: 8,
-          opacity: 0.3,
-          dashArray: '10, 10'
-        }).addTo(routeLayer);
-        
-        zoneLine.bindPopup(
-          '<div class="pt">AVERAGE SPEED ZONE</div>' +
-          '<div class="ps">' + zone.speedLimit + ' km/h limit</div>' +
-          '<div class="pc">' + zone.length.toFixed(1) + 'km length</div>' +
-          '<div style="margin-top:6px;font-size:10px;color:var(--muted)">Monitor your average speed through this section</div>'
-        );
+        // Draw avg speed zone on MapLibre map
+        var map = DR.mapModule ? DR.mapModule.getMap() : null;
+        if (map && DR.mapModule.isReady()) {
+          var zoneId = 'avg-speed-zone-' + i;
+          var coords = zonePoints.map(function(p) { return [p[1], p[0]]; }); // [lng, lat]
+          if (!map.getSource(zoneId)) {
+            map.addSource(zoneId, {
+              type: 'geojson',
+              data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} }
+            });
+            map.addLayer({
+              id: zoneId,
+              type: 'line',
+              source: zoneId,
+              paint: { 'line-color': '#ff8c00', 'line-width': 8, 'line-opacity': 0.3, 'line-dasharray': [10, 10] }
+            });
+          }
+        }
       }
     });
   }

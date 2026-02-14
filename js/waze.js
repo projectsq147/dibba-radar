@@ -18,7 +18,6 @@
     var tx = document.getElementById('wazeText');
     if (tx) tx.textContent = 'WAZE: FETCHING...';
 
-    if (wazeLayer) wazeLayer.clearLayers();
     wazeAlerts = [];
     var seen = {};
     var pending = chunks.length;
@@ -42,7 +41,7 @@
         .finally(function () {
           done++;
           if (done >= pending) {
-            drawWazeAlerts(wazeLayer);
+            drawWazeAlerts();
             if (cb) cb(wazeAlerts);
           }
         });
@@ -88,48 +87,81 @@
       });
   }
 
-  /** Draw Waze alerts on the map layer */
-  function drawWazeAlerts(wazeLayer) {
-    if (!wazeLayer) return;
+  var wazeSourceId = 'waze-alerts-source';
+  var wazeLayerCircle = 'waze-alerts-layer';
+
+  /** Draw Waze alerts on the map using MapLibre */
+  function drawWazeAlerts() {
+    var map = DR.mapModule ? DR.mapModule.getMap() : null;
+    if (!map || !DR.mapModule.isReady()) return;
+
     var police = 0, hazards = 0, jams = 0, closures = 0;
+    var features = [];
 
     wazeAlerts.forEach(function (a) {
       var lat = a.location.y, lon = a.location.x;
       var t = a.type || '', s = a.subtype || '';
-      var col, icon, label;
+      var col, label;
 
       if (t === 'POLICE') {
-        col = '#ff3b3b'; icon = 'P'; label = 'POLICE'; police++;
+        col = '#ff3b3b'; label = 'POLICE'; police++;
       } else if (s.indexOf('CAMERA') >= 0) {
-        col = '#ff3b3b'; icon = 'C'; label = 'MOBILE CAM'; police++;
+        col = '#ff3b3b'; label = 'MOBILE CAM'; police++;
       } else if (t === 'HAZARD') {
-        col = '#ffc107'; icon = '!';
+        col = '#ffc107';
         label = 'HAZARD: ' + s.replace('HAZARD_', '').replace(/_/g, ' ').toLowerCase();
         hazards++;
       } else if (t === 'JAM') {
-        col = '#ff8c00'; icon = 'J';
+        col = '#ff8c00';
         label = 'TRAFFIC: ' + s.replace('JAM_', '').replace(/_/g, ' ').toLowerCase();
         jams++;
       } else if (t === 'ROAD_CLOSED') {
-        col = '#9c27b0'; icon = 'X'; label = 'ROAD CLOSED'; closures++;
+        col = '#9c27b0'; label = 'ROAD CLOSED'; closures++;
       } else {
-        col = '#888'; icon = '?'; label = t + '/' + s;
+        col = '#888'; label = t + '/' + s;
       }
 
-      var mk = L.circleMarker([lat, lon], {
-        radius: 5, fillColor: col, fillOpacity: 0.7,
-        color: col, weight: 1.5, opacity: 0.5
-      }).addTo(wazeLayer);
-      L.circleMarker([lat, lon], {
-        radius: 12, fillColor: col, fillOpacity: 0.08, stroke: false
-      }).addTo(wazeLayer);
-      mk.bindPopup(
-        '<div class="pt" style="color:' + col + '">' + label.toUpperCase() + '</div>' +
-        '<div class="pc">' + (a.street || '') + '</div>' +
-        '<div class="pc">' + lat.toFixed(5) + ', ' + lon.toFixed(5) + '</div>' +
-        '<div style="margin-top:4px;font-size:10px;color:var(--muted)">Live Waze report</div>'
-      );
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lon, lat] },
+        properties: { color: col, label: label.toUpperCase(), street: a.street || '', lat: lat, lon: lon }
+      });
     });
+
+    var geojson = { type: 'FeatureCollection', features: features };
+
+    if (!map.getSource(wazeSourceId)) {
+      map.addSource(wazeSourceId, { type: 'geojson', data: geojson });
+      map.addLayer({
+        id: wazeLayerCircle,
+        type: 'circle',
+        source: wazeSourceId,
+        paint: {
+          'circle-radius': 5,
+          'circle-color': ['get', 'color'],
+          'circle-opacity': 0.7,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': ['get', 'color'],
+          'circle-stroke-opacity': 0.5
+        }
+      });
+
+      map.on('click', wazeLayerCircle, function(e) {
+        var p = e.features[0].properties;
+        var coords = e.features[0].geometry.coordinates.slice();
+        new maplibregl.Popup({ className: 'radar-popup' })
+          .setLngLat(coords)
+          .setHTML(
+            '<div class="pt" style="color:' + p.color + '">' + p.label + '</div>' +
+            '<div class="pc">' + p.street + '</div>' +
+            '<div class="pc">' + parseFloat(p.lat).toFixed(5) + ', ' + parseFloat(p.lon).toFixed(5) + '</div>' +
+            '<div style="margin-top:4px;font-size:10px;color:rgba(255,255,255,0.4)">Live Waze report</div>'
+          )
+          .addTo(map);
+      });
+    } else {
+      map.getSource(wazeSourceId).setData(geojson);
+    }
 
     // Update status bar
     var now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -146,9 +178,9 @@
   }
 
   /** Start auto-refresh timer (every 5 min) */
-  function startAutoRefresh(wazeLayer) {
+  function startAutoRefresh() {
     if (wazeTimer) clearInterval(wazeTimer);
-    wazeTimer = setInterval(function () { fetchWaze(wazeLayer); }, 300000);
+    wazeTimer = setInterval(function () { fetchWaze(); }, 300000);
   }
 
   DR.waze = {

@@ -486,7 +486,7 @@
   /** Update or create user dot on map */
   function updateUserDot() {
     var map = DR.mapModule.getMap();
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !DR.mapModule.isReady()) return;
 
     var lat = currentLat || state.lat;
     var lon = currentLon || state.lon;
@@ -742,7 +742,7 @@
 
         // Show user dot
         var map = DR.mapModule.getMap();
-        if (!map || !map.isStyleLoaded()) return;
+        if (!map || !DR.mapModule.isReady()) return;
 
         if (!map.getSource(userDotSourceId)) {
           map.addSource(userDotSourceId, {

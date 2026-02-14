@@ -4,6 +4,8 @@
   var DR = window.DibbaRadar = window.DibbaRadar || {};
 
   var map;
+  var mapReady = false;
+  var readyCallbacks = [];
   var routeLayerABId = 'route-layer-ab';
   var routeLayerBAId = 'route-layer-ba';
   var gapLayerId = 'gap-layer';
@@ -116,16 +118,7 @@
         paint: {
           'line-color': ['get', 'color'],
           'line-width': ['get', 'width'],
-          'line-opacity': ['get', 'opacity'],
-          'line-dasharray': {
-            type: 'categorical',
-            property: 'dashArray',
-            stops: [
-              ['10,6', [10, 6]],
-              ['5,5', [5, 5]]
-            ],
-            default: [1, 0]
-          }
+          'line-opacity': ['get', 'opacity']
         }
       });
 
@@ -190,6 +183,13 @@
           'circle-stroke-opacity': 0.1
         }
       });
+
+      // Mark map as ready and flush pending callbacks
+      mapReady = true;
+      for (var i = 0; i < readyCallbacks.length; i++) {
+        try { readyCallbacks[i](); } catch (e) { console.error('Map ready callback error:', e); }
+      }
+      readyCallbacks = [];
     });
 
     // Map click for custom pins
@@ -282,7 +282,7 @@
 
   /** Draw pre-baked route polylines */
   function drawRoutes(rd) {
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !mapReady) return;
 
     var routeABFeature = {
       type: 'Feature',
@@ -321,7 +321,7 @@
 
   /** Draw a dynamic OSRM route on the map */
   function drawDynamicRoute(routePoints) {
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !mapReady) return;
 
     // Remove existing dynamic route
     clearDynamicRoute();
@@ -383,7 +383,7 @@
 
   /** Main draw: gaps, cameras, density bar, panel stats, markers */
   function drawMap() {
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !mapReady) return;
 
     var rd = DR.cameras.getRouteData();
     if (!rd) return;
@@ -756,9 +756,19 @@
     DR.pins.exportPins();
   }
 
+  /** Run callback when map style is loaded, or immediately if already ready */
+  function onReady(fn) {
+    if (mapReady) { fn(); }
+    else { readyCallbacks.push(fn); }
+  }
+
+  function isReady() { return mapReady; }
+
   DR.mapModule = {
     init: initMap,
     getMap: getMap,
+    isReady: isReady,
+    onReady: onReady,
     getWazeLayer: getWazeLayer,
     getDirection: getDirection,
     drawRoutes: drawRoutes,
