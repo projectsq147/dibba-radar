@@ -107,6 +107,28 @@
 
     tracking = true;
     positions = [];
+
+    // Get immediate high-accuracy fix before starting watch
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var c = pos.coords;
+        state.lat = c.latitude;
+        state.lon = c.longitude;
+        state.accuracy = c.accuracy;
+        targetLat = c.latitude;
+        targetLon = c.longitude;
+        currentLat = c.latitude;
+        currentLon = c.longitude;
+        // Center map immediately on real position
+        var map = DR.mapModule ? DR.mapModule.getMap() : null;
+        if (map) {
+          map.setView([c.latitude, c.longitude], Math.max(map.getZoom(), 15), { animate: false });
+        }
+        updateBlueDot();
+      },
+      function() { /* ignore error, watchPosition will handle it */ },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+    );
     routeKmHistory = [];
     state.direction = null;
     var gotFirstFix = false;
@@ -162,8 +184,8 @@
       onError,
       {
         enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 15000
+        maximumAge: 0,    // always fresh position
+        timeout: 10000
       }
     );
 
@@ -675,8 +697,8 @@
         console.log('Passive GPS:', err.code, err.message);
       },
       {
-        enableHighAccuracy: false, // save battery in passive mode
-        maximumAge: 30000,
+        enableHighAccuracy: true, // get accurate position from the start
+        maximumAge: 5000,
         timeout: 10000
       }
     );
