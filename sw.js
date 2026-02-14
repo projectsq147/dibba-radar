@@ -1,6 +1,6 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v12';
+var CACHE_NAME = 'dibba-radar-v13';
 
 var APP_FILES = [
   './',
@@ -30,15 +30,13 @@ var APP_FILES = [
   './js/share.js',
   './js/route-picker.js',
   './js/app.js',
-  './data/routes-index.json',
-  './data/dubai-dibba.json',
-  './data/dubai-dibba.js'
+  './data/routes-index.json'
 ];
 
 var CDN_FILES = [
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap'
+  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css',
+  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js',
+  'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap'
 ];
 
 // Install: cache app shell + CDN resources
