@@ -1,102 +1,400 @@
-/* js/map.js -- Leaflet map, layers, gap drawing, camera markers, dynamic route */
+/* js/map.js -- MapLibre GL JS map, layers, gap drawing, camera markers, dynamic route */
 (function () {
   'use strict';
   var DR = window.DibbaRadar = window.DibbaRadar || {};
 
-  var map, routeLayerAB, routeLayerBA;
-  var gapLayer, camLayer, labelLayer, wazeLayer;
-  var dynamicRouteLayer = null;
+  var map;
+  var routeLayerABId = 'route-layer-ab';
+  var routeLayerBAId = 'route-layer-ba';
+  var gapLayerId = 'gap-layer';
+  var camLayerId = 'cameras-layer';
+  var labelLayerId = 'labels-layer';
+  var wazeLayerId = 'waze-layer';
+  var dynamicRouteLayerId = 'dynamic-route-layer';
   var direction = 'ab';
   var adding = false;
   var pendingLatLng = null;
-  var _tmpMarker = null;
+  var _tmpMarkerSource = 'tmp-marker-source';
 
   function initMap() {
-    map = L.map('map', {
-      center: [25.42, 55.9],
+    map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          'carto': {
+            type: 'raster',
+            tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
+            tileSize: 256
+          }
+        },
+        layers: [{
+          id: 'carto',
+          type: 'raster',
+          source: 'carto'
+        }]
+      },
+      center: [55.9, 25.42], // [lng, lat] - MapLibre order!
       zoom: 10,
-      zoomControl: true,
+      bearing: 0,
+      pitch: 0,
       attributionControl: false
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19
-    }).addTo(map);
+    // Wait for map to load before setting up layers
+    map.on('load', function() {
+      // Add empty sources for our layers
+      map.addSource('gaps', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+      
+      map.addSource('cameras', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
 
-    gapLayer = L.layerGroup().addTo(map);
-    camLayer = L.layerGroup().addTo(map);
-    labelLayer = L.layerGroup().addTo(map);
-    wazeLayer = L.layerGroup().addTo(map);
+      map.addSource('labels', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.addSource('waze', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.addSource('route-ab', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.addSource('route-ba', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      // Add layers
+      map.addLayer({
+        id: routeLayerABId,
+        type: 'line',
+        source: 'route-ab',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#0a2a1a',
+          'line-width': 4,
+          'line-opacity': 0.5
+        }
+      });
+
+      map.addLayer({
+        id: routeLayerBAId,
+        type: 'line',
+        source: 'route-ba',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#0a2a1a',
+          'line-width': 3,
+          'line-opacity': 0.25
+        }
+      });
+
+      map.addLayer({
+        id: gapLayerId,
+        type: 'line',
+        source: 'gaps',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['get', 'width'],
+          'line-opacity': ['get', 'opacity'],
+          'line-dasharray': {
+            type: 'categorical',
+            property: 'dashArray',
+            stops: [
+              ['10,6', [10, 6]],
+              ['5,5', [5, 5]]
+            ],
+            default: [1, 0]
+          }
+        }
+      });
+
+      map.addLayer({
+        id: camLayerId,
+        type: 'circle',
+        source: 'cameras',
+        paint: {
+          'circle-radius': [
+            'case',
+            ['==', ['get', 'source'], 'custom'], 8,
+            6
+          ],
+          'circle-color': ['get', 'color'],
+          'circle-opacity': [
+            'case',
+            ['==', ['get', 'source'], 'custom'], 0.95,
+            0.95
+          ],
+          'circle-stroke-width': [
+            'case',
+            ['==', ['get', 'source'], 'custom'], 2,
+            1.2
+          ],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-opacity': [
+            'case',
+            ['==', ['get', 'source'], 'custom'], 0.8,
+            0.5
+          ]
+        }
+      });
+
+      map.addLayer({
+        id: labelLayerId,
+        type: 'symbol',
+        source: 'labels',
+        layout: {
+          'text-field': ['get', 'text'],
+          'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+          'text-size': ['get', 'size'],
+          'text-anchor': 'center',
+          'text-allow-overlap': true
+        },
+        paint: {
+          'text-color': ['get', 'color'],
+          'text-halo-color': 'rgba(6,10,15,0.88)',
+          'text-halo-width': 1
+        }
+      });
+
+      map.addLayer({
+        id: wazeLayerId,
+        type: 'circle',
+        source: 'waze',
+        paint: {
+          'circle-radius': 4,
+          'circle-color': '#9c27b0',
+          'circle-opacity': 0.15,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#9c27b0',
+          'circle-stroke-opacity': 0.1
+        }
+      });
+    });
 
     // Map click for custom pins
     map.on('click', function (e) {
       if (!adding) return;
-      pendingLatLng = e.latlng;
+      pendingLatLng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
       document.getElementById('speedPicker').style.display = 'block';
       document.getElementById('overlay').style.display = 'block';
       setTimeout(function () {
         document.getElementById('speedPicker').classList.add('show');
       }, 10);
-      if (_tmpMarker) map.removeLayer(_tmpMarker);
-      _tmpMarker = L.circleMarker([e.latlng.lat, e.latlng.lng], {
-        radius: 10, fillColor: '#00e5ff', fillOpacity: 0.5,
-        color: '#fff', weight: 2
-      }).addTo(map);
+      
+      // Show temporary marker
+      if (map.getSource(_tmpMarkerSource)) {
+        map.removeLayer(_tmpMarkerSource + '-layer');
+        map.removeSource(_tmpMarkerSource);
+      }
+      
+      map.addSource(_tmpMarkerSource, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [e.lngLat.lng, e.lngLat.lat]
+          }
+        }
+      });
+      
+      map.addLayer({
+        id: _tmpMarkerSource + '-layer',
+        type: 'circle',
+        source: _tmpMarkerSource,
+        paint: {
+          'circle-radius': 10,
+          'circle-color': '#00e5ff',
+          'circle-opacity': 0.5,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
+    });
+
+    // Camera click handler
+    map.on('click', camLayerId, function(e) {
+      var cam = e.features[0].properties;
+      var coordinates = e.features[0].geometry.coordinates.slice();
+
+      // Show popup
+      var popupContent = '<div class="pt" style="color:' + 
+        (cam.source === 'custom' ? '#00e5ff' : '#fff') + '">' +
+        (cam.source === 'custom' ? 'YOUR PIN' : 'CAMERA') + ' #' + (cam.index + 1) + '</div>' +
+        '<div>Limit: <span class="ps">' +
+        (cam.speed === '?' ? 'Unknown' : cam.speed + ' km/h') +
+        '</span></div>' +
+        '<div style="margin-top:2px">km <span class="pg">' +
+        parseFloat(cam.route_km).toFixed(1) + '</span> / ' + parseFloat(cam.total_km).toFixed(0) + '</div>' +
+        '<div class="pc">' + parseFloat(cam.lat).toFixed(6) + ', ' + parseFloat(cam.lon).toFixed(6) + '</div>';
+
+      if (cam.gap && parseFloat(cam.gap) > 0) {
+        popupContent += '<div style="margin-top:6px">Gap: <span class="pg">' + parseFloat(cam.gap).toFixed(2) + ' km</span></div>';
+      }
+
+      if (cam.source === 'custom') {
+        popupContent += '<div style="margin-top:8px"><button onclick="DibbaRadar.mapModule.removeCustom(' +
+          cam.lat + ',' + cam.lon +
+          ')" style="background:rgba(255,59,59,0.1);color:#ff6b6b;border:1px solid rgba(255,59,59,0.2);border-radius:20px;padding:6px 16px;font-family:Rajdhani;font-size:11px;font-weight:600;cursor:pointer">REMOVE</button></div>';
+      }
+
+      new maplibregl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(popupContent)
+        .addTo(map);
+    });
+
+    // Change cursor on hover
+    map.on('mouseenter', camLayerId, function () {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', camLayerId, function () {
+      map.getCanvas().style.cursor = '';
     });
 
     return map;
   }
 
   function getMap() { return map; }
-  function getWazeLayer() { return wazeLayer; }
+  function getWazeLayer() { return wazeLayerId; }
   function getDirection() { return direction; }
 
   /** Draw pre-baked route polylines */
   function drawRoutes(rd) {
-    routeLayerAB = L.polyline(rd.route_ab, {
-      color: '#0a2a1a', weight: 4, opacity: 0.5
-    }).addTo(map);
-    routeLayerBA = L.polyline(rd.route_ba, {
-      color: '#0a2a1a', weight: 3, opacity: 0.25
-    }).addTo(map);
-    map.fitBounds(rd.route_ab.map(function (p) { return [p[0], p[1]]; }), {
-      padding: [80, 20]
+    if (!map || !map.isStyleLoaded()) return;
+
+    var routeABFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: rd.route_ab.map(function(p) { return [p[1], p[0]]; }) // [lng, lat]
+      }
+    };
+
+    var routeBAFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: rd.route_ba.map(function(p) { return [p[1], p[0]]; }) // [lng, lat]
+      }
+    };
+
+    map.getSource('route-ab').setData({
+      type: 'FeatureCollection',
+      features: [routeABFeature]
     });
+
+    map.getSource('route-ba').setData({
+      type: 'FeatureCollection',
+      features: [routeBAFeature]
+    });
+
+    // Fit bounds
+    var coords = rd.route_ab.map(function(p) { return [p[1], p[0]]; });
+    var bounds = new maplibregl.LngLatBounds();
+    coords.forEach(function(coord) {
+      bounds.extend(coord);
+    });
+    map.fitBounds(bounds, { padding: { top: 80, bottom: 20, left: 20, right: 20 } });
   }
 
   /** Draw a dynamic OSRM route on the map */
   function drawDynamicRoute(routePoints) {
-    if (dynamicRouteLayer) {
-      map.removeLayer(dynamicRouteLayer);
-    }
-    dynamicRouteLayer = L.polyline(routePoints, {
-      color: '#00ff88',
-      weight: 5,
-      opacity: 0.85
-    }).addTo(map);
+    if (!map || !map.isStyleLoaded()) return;
 
-    map.fitBounds(dynamicRouteLayer.getBounds(), { padding: [100, 40] });
+    // Remove existing dynamic route
+    clearDynamicRoute();
+
+    // Add source if it doesn't exist
+    if (!map.getSource(dynamicRouteLayerId)) {
+      map.addSource(dynamicRouteLayerId, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      map.addLayer({
+        id: dynamicRouteLayerId,
+        type: 'line',
+        source: dynamicRouteLayerId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#00ff88',
+          'line-width': 5,
+          'line-opacity': 0.85
+        }
+      });
+    }
+
+    var routeFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: routePoints.map(function(p) { return [p[1], p[0]]; }) // [lng, lat]
+      }
+    };
+
+    map.getSource(dynamicRouteLayerId).setData({
+      type: 'FeatureCollection',
+      features: [routeFeature]
+    });
+
+    // Fit bounds
+    var coords = routePoints.map(function(p) { return [p[1], p[0]]; });
+    var bounds = new maplibregl.LngLatBounds();
+    coords.forEach(function(coord) {
+      bounds.extend(coord);
+    });
+    map.fitBounds(bounds, { padding: { top: 100, bottom: 40, left: 40, right: 40 } });
   }
 
   /** Clear dynamic route layer */
   function clearDynamicRoute() {
-    if (dynamicRouteLayer) {
-      map.removeLayer(dynamicRouteLayer);
-      dynamicRouteLayer = null;
+    if (map && map.getSource(dynamicRouteLayerId)) {
+      map.getSource(dynamicRouteLayerId).setData({
+        type: 'FeatureCollection',
+        features: []
+      });
     }
   }
 
   /** Main draw: gaps, cameras, density bar, panel stats, markers */
   function drawMap() {
+    if (!map || !map.isStyleLoaded()) return;
+
     var rd = DR.cameras.getRouteData();
     if (!rd) return;
     var TK = rd.distance_km;
     var R = rd.route_ab;
     var nav = DR.cameras.isNavigating();
 
-    gapLayer.clearLayers();
-    camLayer.clearLayers();
-    labelLayer.clearLayers();
+    // Clear existing data
+    map.getSource('gaps').setData({ type: 'FeatureCollection', features: [] });
+    map.getSource('cameras').setData({ type: 'FeatureCollection', features: [] });
+    map.getSource('labels').setData({ type: 'FeatureCollection', features: [] });
 
     var all = DR.cameras.getAllCams();
     document.getElementById('camCount').textContent = all.length;
@@ -108,27 +406,34 @@
     if (rmEl) rmEl.textContent = Math.round(rd.duration_min);
 
     // Style pre-baked route layers
-    if (routeLayerAB && routeLayerBA) {
-      if (nav) {
-        // Dim pre-baked routes
-        routeLayerAB.setStyle({ opacity: 0.08, weight: 2, color: '#0a2a1a' });
-        routeLayerBA.setStyle({ opacity: 0.04, weight: 1, color: '#0a2a1a' });
+    if (nav) {
+      // Dim pre-baked routes
+      map.setPaintProperty(routeLayerABId, 'line-opacity', 0.08);
+      map.setPaintProperty(routeLayerABId, 'line-width', 2);
+      map.setPaintProperty(routeLayerBAId, 'line-opacity', 0.04);
+      map.setPaintProperty(routeLayerBAId, 'line-width', 1);
+    } else {
+      if (direction === 'ab') {
+        map.setPaintProperty(routeLayerABId, 'line-opacity', 0.5);
+        map.setPaintProperty(routeLayerABId, 'line-width', 4);
+        map.setPaintProperty(routeLayerBAId, 'line-opacity', 0.15);
+        map.setPaintProperty(routeLayerBAId, 'line-width', 2);
       } else {
-        if (direction === 'ab') {
-          routeLayerAB.setStyle({ opacity: 0.5, weight: 4, color: '#0a2a1a' });
-          routeLayerBA.setStyle({ opacity: 0.15, weight: 2, color: '#0a2a1a' });
-        } else {
-          routeLayerBA.setStyle({ opacity: 0.5, weight: 4, color: '#0a2a1a' });
-          routeLayerAB.setStyle({ opacity: 0.15, weight: 2, color: '#0a2a1a' });
-        }
+        map.setPaintProperty(routeLayerBAId, 'line-opacity', 0.5);
+        map.setPaintProperty(routeLayerBAId, 'line-width', 4);
+        map.setPaintProperty(routeLayerABId, 'line-opacity', 0.15);
+        map.setPaintProperty(routeLayerABId, 'line-width', 2);
       }
     }
 
-    // Calculate gaps
+    // Calculate gaps and build features
     var pts = [{ route_km: 0, route_idx: 0 }]
       .concat(all)
       .concat([{ route_km: TK, route_idx: R.length - 1 }]);
     var maxG = 0;
+
+    var gapFeatures = [];
+    var labelFeatures = [];
 
     for (var i = 1; i < pts.length; i++) {
       var p = pts[i - 1], c = pts[i];
@@ -146,91 +451,114 @@
       else if (g >= 1) { col = '#ff8c00'; w = 3; da = '10,6'; op = 0.45; }
       else { col = '#ff3b3b'; w = 3; da = '5,5'; op = 0.4; }
 
-      var line = L.polyline(seg, {
-        color: col, weight: w, opacity: op, dashArray: da
-      }).addTo(gapLayer);
-      line.bindPopup('<div class="pt"><span class="pg">' + g.toFixed(1) + ' km</span> gap</div>');
+      var lineFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: seg.map(function(pt) { return [pt[1], pt[0]]; }) // [lng, lat]
+        },
+        properties: {
+          color: col,
+          width: w,
+          dashArray: da || '',
+          opacity: op,
+          gap: g.toFixed(1)
+        }
+      };
+      gapFeatures.push(lineFeature);
 
+      // Gap labels
       if (g >= 3) {
         var mi = Math.floor((si + ei) / 2), mp = R[mi];
         if (mp) {
-          L.marker(mp, {
-            icon: L.divIcon({
-              className: '',
-              html: '<div style="font-family:Share Tech Mono,monospace;background:rgba(6,10,15,0.88);color:' +
-                (g >= 5 ? '#00ff88' : '#4ade80') +
-                ';padding:2px 8px;border-radius:20px;font-size:' +
-                (g >= 10 ? '12' : '10') +
-                'px;font-weight:600;white-space:nowrap;border:1px solid ' +
-                (g >= 5 ? 'rgba(0,255,136,0.25)' : 'rgba(74,222,128,0.18)') +
-                ';letter-spacing:0.5px;">' + g.toFixed(1) + ' km</div>',
-              iconAnchor: [24, 10]
-            }),
-            interactive: false
-          }).addTo(labelLayer);
+          var labelFeature = {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [mp[1], mp[0]] // [lng, lat]
+            },
+            properties: {
+              text: g.toFixed(1) + ' km',
+              color: g >= 5 ? '#00ff88' : '#4ade80',
+              size: g >= 10 ? 12 : 10
+            }
+          };
+          labelFeatures.push(labelFeature);
         }
       }
     }
 
+    // Update gap layer
+    map.getSource('gaps').setData({
+      type: 'FeatureCollection',
+      features: gapFeatures
+    });
+
+    // Update label layer
+    map.getSource('labels').setData({
+      type: 'FeatureCollection',
+      features: labelFeatures
+    });
+
     document.getElementById('maxGap').textContent = maxG.toFixed(1);
 
     // Camera markers
+    var cameraFeatures = [];
     all.forEach(function (cam, i) {
       var isC = cam.source === 'custom';
       var col = isC ? '#00e5ff' :
         cam.speed === '120' ? '#ff8c00' :
           cam.speed === '100' ? '#ffc107' : '#ff3b3b';
 
-      // Pulse ring
-      L.marker([cam.lat, cam.lon], {
-        icon: L.divIcon({
-          className: '',
-          html: '<div style="width:22px;height:22px;border-radius:50%;background:' + col +
-            ';opacity:0.12;animation:pulse 2.5s ease-in-out infinite;animation-delay:' +
-            (i * 0.15 % 2.5) + 's;"></div>',
-          iconAnchor: [11, 11]
-        }),
-        interactive: false
-      }).addTo(camLayer);
-
-      var mk = L.circleMarker([cam.lat, cam.lon], {
-        radius: isC ? 8 : 6,
-        fillColor: col, fillOpacity: 0.95,
-        color: '#fff', weight: isC ? 2 : 1.2,
-        opacity: isC ? 0.8 : 0.5
-      }).addTo(camLayer);
-
       var gap = '';
       if (i > 0) {
         var gv = cam.route_km - all[i - 1].route_km;
-        gap = '<div style="margin-top:6px">Gap: <span class="pg">' + gv.toFixed(2) + ' km</span></div>';
+        gap = gv.toFixed(2);
       }
-      var del = '';
-      if (isC) {
-        del = '<div style="margin-top:8px"><button onclick="DibbaRadar.mapModule.removeCustom(' +
-          cam.lat + ',' + cam.lon +
-          ')" style="background:rgba(255,59,59,0.1);color:#ff6b6b;border:1px solid rgba(255,59,59,0.2);border-radius:20px;padding:6px 16px;font-family:Rajdhani;font-size:11px;font-weight:600;cursor:pointer">REMOVE</button></div>';
-      }
-      mk.bindPopup(
-        '<div class="pt" style="color:' + (isC ? '#00e5ff' : '#fff') + '">' +
-        (isC ? 'YOUR PIN' : 'CAMERA') + ' #' + (i + 1) + '</div>' +
-        '<div>Limit: <span class="ps">' +
-        (cam.speed === '?' ? 'Unknown' : cam.speed + ' km/h') +
-        '</span></div>' +
-        '<div style="margin-top:2px">km <span class="pg">' +
-        cam.route_km.toFixed(1) + '</span> / ' + TK.toFixed(0) + '</div>' +
-        '<div class="pc">' + cam.lat.toFixed(6) + ', ' + cam.lon.toFixed(6) + '</div>' +
-        gap + del
-      );
+
+      var cameraFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [cam.lon, cam.lat] // [lng, lat]
+        },
+        properties: {
+          color: col,
+          source: cam.source || 'camera',
+          speed: cam.speed || '?',
+          route_km: cam.route_km || 0,
+          total_km: TK,
+          lat: cam.lat,
+          lon: cam.lon,
+          gap: gap,
+          index: i
+        }
+      };
+      cameraFeatures.push(cameraFeature);
     });
 
-    // Off-route cameras (pre-baked only)
+    // Off-route cameras
     var offRoute = DR.cameras.getOffRouteCams();
     offRoute.forEach(function (c) {
-      L.circleMarker([c.lat, c.lon], {
-        radius: 3, fillColor: '#9c27b0', fillOpacity: 0.15,
-        color: '#9c27b0', weight: 1, opacity: 0.1
-      }).addTo(camLayer);
+      var offFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [c.lon, c.lat]
+        },
+        properties: {
+          color: '#9c27b0',
+          source: 'off-route',
+          speed: '?',
+          route_km: 0,
+          total_km: TK,
+          lat: c.lat,
+          lon: c.lon,
+          gap: '',
+          index: -1
+        }
+      };
+      cameraFeatures.push(offFeature);
     });
 
     // Start / end markers
@@ -246,17 +574,35 @@
         [25.6211, 56.2821, 'WAVE CAFE DIBBA', 'END']
       ];
     }
+    
     markers.forEach(function (p) {
-      L.marker([p[0], p[1]], {
-        icon: L.divIcon({
-          className: '',
-          html: '<div style="width:14px;height:14px;background:#00e5ff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 14px rgba(0,229,255,0.5)"></div>',
-          iconAnchor: [7, 7]
-        })
-      }).addTo(camLayer).bindPopup(
-        '<div class="pt" style="color:#00e5ff">' + p[2] + '</div>' +
-        '<div class="pc">' + p[3] + '</div>'
-      );
+      var markerFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [p[1], p[0]] // [lng, lat]
+        },
+        properties: {
+          color: '#00e5ff',
+          source: 'endpoint',
+          speed: '--',
+          route_km: 0,
+          total_km: TK,
+          lat: p[0],
+          lon: p[1],
+          gap: '',
+          index: -1,
+          name: p[2],
+          type: p[3]
+        }
+      };
+      cameraFeatures.push(markerFeature);
+    });
+
+    // Update camera layer
+    map.getSource('cameras').setData({
+      type: 'FeatureCollection',
+      features: cameraFeatures
     });
 
     // Density bar
@@ -370,7 +716,13 @@
       document.getElementById('speedPicker').style.display = 'none';
       document.getElementById('overlay').style.display = 'none';
     }, 200);
-    if (_tmpMarker) { map.removeLayer(_tmpMarker); _tmpMarker = null; }
+    
+    // Remove temporary marker
+    if (map.getSource(_tmpMarkerSource)) {
+      map.removeLayer(_tmpMarkerSource + '-layer');
+      map.removeSource(_tmpMarkerSource);
+    }
+    
     toggleAdd();
     drawMap();
   }
@@ -382,12 +734,21 @@
       document.getElementById('speedPicker').style.display = 'none';
       document.getElementById('overlay').style.display = 'none';
     }, 200);
-    if (_tmpMarker) { map.removeLayer(_tmpMarker); _tmpMarker = null; }
+    
+    // Remove temporary marker
+    if (map.getSource(_tmpMarkerSource)) {
+      map.removeLayer(_tmpMarkerSource + '-layer');
+      map.removeSource(_tmpMarkerSource);
+    }
   }
 
   function removeCustom(lat, lon) {
     DR.pins.removePin(lat, lon);
-    map.closePopup();
+    // Close any open popups
+    var popups = document.getElementsByClassName('maplibregl-popup');
+    for (var i = 0; i < popups.length; i++) {
+      popups[i].remove();
+    }
     drawMap();
   }
 

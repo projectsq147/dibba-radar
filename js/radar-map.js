@@ -1,12 +1,9 @@
-/* js/radar-map.js -- Full radar map view: all cameras + heat-colored roads */
+/* js/radar-map.js -- Full radar map view: all cameras + heat-colored roads with MapLibre */
 (function () {
   'use strict';
   var DR = window.DibbaRadar = window.DibbaRadar || {};
 
   var loaded = false;
-  var cameraMarkers = [];
-  var segmentLines = [];
-  var clusterGroup = null;
   var data = null;
   var nearbyAlertActive = false;
   var lastAlertCam = null;
@@ -14,6 +11,11 @@
   var wasOverMargin = false;  // for green flash on recovery
   var flashRedTimer = null;
   var flashGreenTimer = null;
+
+  var radarCamerasSourceId = 'radar-cameras-source';
+  var radarCamerasLayerId = 'radar-cameras-layer';
+  var roadSegmentsSourceId = 'road-segments-source';
+  var roadSegmentsLayerId = 'road-segments-layer';
 
   /** Initialize radar map mode */
   function init(cb) {
@@ -52,96 +54,181 @@
   /** Render cameras and road segments on map */
   function render() {
     var map = DR.mapModule ? DR.mapModule.getMap() : null;
-    if (!map || !data) return;
+    if (!map || !data || !map.isStyleLoaded()) return;
 
     // Draw colored road segments first (under cameras)
     var segs = data.segments || [];
+    var segmentFeatures = [];
+
     for (var i = 0; i < segs.length; i++) {
       var seg = segs[i];
       if (!seg.coords || seg.coords.length < 2) continue;
-      var line = L.polyline(seg.coords, {
-        color: seg.color,
-        weight: 4,
-        opacity: 0.7,
-        smoothFactor: 1
-      }).addTo(map);
-      segmentLines.push(line);
+      
+      var segmentFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: seg.coords.map(function(coord) { return [coord[1], coord[0]]; }) // [lng, lat]
+        },
+        properties: {
+          color: seg.color
+        }
+      };
+      segmentFeatures.push(segmentFeature);
+    }
+
+    // Add road segments source and layer
+    if (!map.getSource(roadSegmentsSourceId)) {
+      map.addSource(roadSegmentsSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: segmentFeatures
+        }
+      });
+
+      map.addLayer({
+        id: roadSegmentsLayerId,
+        type: 'line',
+        source: roadSegmentsSourceId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 4,
+          'line-opacity': 0.7
+        }
+      });
+    } else {
+      map.getSource(roadSegmentsSourceId).setData({
+        type: 'FeatureCollection',
+        features: segmentFeatures
+      });
     }
 
     // Draw camera markers
     var cams = data.cameras || [];
+    var cameraFeatures = [];
+
     for (var j = 0; j < cams.length; j++) {
       var c = cams[j];
-      var marker = createCameraMarker(c);
-      if (marker) {
-        marker.addTo(map);
-        cameraMarkers.push(marker);
+      var sl = c.speed_limit;
+      var hasLimit = sl && sl !== '?' && sl !== 'unknown';
+      var limitNum = hasLimit ? parseInt(sl, 10) : null;
+
+      // Color and size based on speed limit
+      var color, size;
+      if (!hasLimit) {
+        color = '#78909c'; // grey for unknown
+        size = 8;
+      } else if (limitNum >= 120) {
+        color = '#ff1744'; // red for high-speed enforcement
+        size = 10;
+      } else if (limitNum >= 80) {
+        color = '#ff6d00'; // orange
+        size = 9;
+      } else {
+        color = '#ffd600'; // yellow for low-speed zones
+        size = 8;
       }
+
+      var cameraFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [c.lon, c.lat] // [lng, lat]
+        },
+        properties: {
+          color: color,
+          size: size,
+          speed_limit: sl || '?',
+          source: c.source || 'OSM',
+          lat: c.lat,
+          lon: c.lon
+        }
+      };
+      cameraFeatures.push(cameraFeature);
+    }
+
+    // Add radar cameras source and layer
+    if (!map.getSource(radarCamerasSourceId)) {
+      map.addSource(radarCamerasSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: cameraFeatures
+        }
+      });
+
+      map.addLayer({
+        id: radarCamerasLayerId,
+        type: 'circle',
+        source: radarCamerasSourceId,
+        paint: {
+          'circle-radius': ['get', 'size'],
+          'circle-color': ['get', 'color'],
+          'circle-opacity': 0.95,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': 'rgba(255,255,255,0.8)',
+          'circle-stroke-opacity': 1
+        }
+      });
+
+      // Add click handler for radar cameras
+      map.on('click', radarCamerasLayerId, function(e) {
+        var cam = e.features[0].properties;
+        var coordinates = e.features[0].geometry.coordinates.slice();
+
+        var popupContent = '<b>Speed Camera</b><br>';
+        if (cam.speed_limit && cam.speed_limit !== '?' && cam.speed_limit !== 'unknown') {
+          popupContent += 'Limit: <b>' + cam.speed_limit + ' km/h</b><br>';
+        }
+        popupContent += 'Source: ' + cam.source;
+
+        new maplibregl.Popup({ className: 'radar-popup' })
+          .setLngLat(coordinates)
+          .setHTML(popupContent)
+          .addTo(map);
+      });
+
+      // Change cursor on hover
+      map.on('mouseenter', radarCamerasLayerId, function () {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', radarCamerasLayerId, function () {
+        map.getCanvas().style.cursor = '';
+      });
+
+    } else {
+      map.getSource(radarCamerasSourceId).setData({
+        type: 'FeatureCollection',
+        features: cameraFeatures
+      });
     }
 
     // Fit map to show all segments
-    if (segmentLines.length > 0) {
-      var group = L.featureGroup(segmentLines);
-      var bounds = group.getBounds();
-      if (bounds.isValid()) {
+    if (segmentFeatures.length > 0) {
+      var bounds = new maplibregl.LngLatBounds();
+      
+      // Extend bounds with all segment coordinates
+      segmentFeatures.forEach(function(feature) {
+        if (feature.geometry.type === 'LineString') {
+          feature.geometry.coordinates.forEach(function(coord) {
+            bounds.extend(coord);
+          });
+        }
+      });
+
+      if (!bounds.isEmpty()) {
         // Don't auto-fit if user has a GPS position in UAE
         var st = DR.gps ? DR.gps.getState() : {};
         if (!st.lat || st.lat < 22 || st.lat > 27) {
-          map.fitBounds(bounds, { padding: [30, 30] });
+          map.fitBounds(bounds, { padding: 30 });
         }
       }
     }
-  }
-
-  /** Create a camera marker with appropriate icon */
-  function createCameraMarker(cam) {
-    var sl = cam.speed_limit;
-    var hasLimit = sl && sl !== '?' && sl !== 'unknown';
-    var limitNum = hasLimit ? parseInt(sl, 10) : null;
-
-    // Color based on speed limit
-    var color, size;
-    if (!hasLimit) {
-      color = '#78909c'; // grey for unknown
-      size = 8;
-    } else if (limitNum >= 120) {
-      color = '#ff1744'; // red for high-speed enforcement
-      size = 10;
-    } else if (limitNum >= 80) {
-      color = '#ff6d00'; // orange
-      size = 9;
-    } else {
-      color = '#ffd600'; // yellow for low-speed zones
-      size = 8;
-    }
-
-    var icon = L.divIcon({
-      className: 'radar-cam-icon',
-      html: '<div style="' +
-        'width:' + size + 'px;height:' + size + 'px;' +
-        'background:' + color + ';' +
-        'border:1.5px solid rgba(255,255,255,0.8);' +
-        'border-radius:50%;' +
-        'box-shadow:0 0 6px ' + color + '80;' +
-        '"></div>',
-      iconSize: [size, size],
-      iconAnchor: [size / 2, size / 2]
-    });
-
-    var marker = L.marker([cam.lat, cam.lon], {
-      icon: icon,
-      interactive: true
-    });
-
-    // Popup with speed limit
-    var popupText = '<b>Speed Camera</b><br>';
-    if (hasLimit) {
-      popupText += 'Limit: <b>' + sl + ' km/h</b><br>';
-    }
-    popupText += 'Source: ' + (cam.source || 'OSM');
-    marker.bindPopup(popupText, { className: 'radar-popup' });
-
-    return marker;
   }
 
   /** Start nearby camera alerts (runs during driving without a specific route) */
@@ -315,14 +402,25 @@
 
   /** Clear all markers and lines */
   function clear() {
-    for (var i = 0; i < cameraMarkers.length; i++) {
-      cameraMarkers[i].remove();
+    var map = DR.mapModule ? DR.mapModule.getMap() : null;
+    if (!map) return;
+
+    // Clear radar cameras
+    if (map.getLayer(radarCamerasLayerId)) {
+      map.removeLayer(radarCamerasLayerId);
     }
-    cameraMarkers = [];
-    for (var j = 0; j < segmentLines.length; j++) {
-      segmentLines[j].remove();
+    if (map.getSource(radarCamerasSourceId)) {
+      map.removeSource(radarCamerasSourceId);
     }
-    segmentLines = [];
+
+    // Clear road segments
+    if (map.getLayer(roadSegmentsLayerId)) {
+      map.removeLayer(roadSegmentsLayerId);
+    }
+    if (map.getSource(roadSegmentsSourceId)) {
+      map.removeSource(roadSegmentsSourceId);
+    }
+
     stopNearbyAlerts();
   }
 

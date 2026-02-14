@@ -1,4 +1,4 @@
-/* js/gps.js -- GPS tracking, speed calculation, blue dot, route snapping */
+/* js/gps.js -- GPS tracking, speed calculation, user dot, route snapping with MapLibre native rotation */
 (function () {
   'use strict';
   var DR = window.DibbaRadar = window.DibbaRadar || {};
@@ -25,13 +25,15 @@
   };
 
   var autoCenter = true;
-  var blueDotMarker = null;
-  var blueDotCircle = null; // accuracy circle
-  var animFrameId = null;
+  var userDotSourceId = 'user-dot-source';
+  var userDotLayerId = 'user-dot-layer';
+  var accuracyCircleSourceId = 'accuracy-circle-source';
+  var accuracyCircleLayerId = 'accuracy-circle-layer';
+
+  // Smooth position interpolation
   var targetLat = null, targetLon = null;
   var currentLat = null, currentLon = null;
-  var targetHeading = 0, currentHeading = 0;
-  var mapRotationEnabled = true;
+  var animFrameId = null;
 
   function getState() { return state; }
   function isTracking() { return tracking; }
@@ -49,7 +51,12 @@
     setAutoCenter(!autoCenter);
     if (autoCenter && state.lat !== null) {
       var map = DR.mapModule.getMap();
-      if (map) map.setView([state.lat, state.lon], Math.max(map.getZoom(), 14));
+      if (map) {
+        map.easeTo({
+          center: [state.lon, state.lat],
+          zoom: Math.max(map.getZoom(), 14)
+        });
+      }
     }
   }
 
@@ -121,16 +128,21 @@
         targetLon = c.longitude;
         currentLat = c.latitude;
         currentLon = c.longitude;
+        
         // Center map immediately on real position
         var map = DR.mapModule ? DR.mapModule.getMap() : null;
         if (map) {
-          map.setView([c.latitude, c.longitude], Math.max(map.getZoom(), 15), { animate: false });
+          map.easeTo({
+            center: [c.longitude, c.latitude],
+            zoom: Math.max(map.getZoom(), 15)
+          });
         }
-        updateBlueDot();
+        updateUserDot();
       },
       function() { /* ignore error, watchPosition will handle it */ },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
     );
+
     routeKmHistory = [];
     state.direction = null;
     var gotFirstFix = false;
@@ -219,11 +231,28 @@
       animFrameId = null;
     }
 
-    // Remove blue dot
+    // Remove user dot from map
     var map = DR.mapModule.getMap();
     if (map) {
-      if (blueDotMarker) { map.removeLayer(blueDotMarker); blueDotMarker = null; }
-      if (blueDotCircle) { map.removeLayer(blueDotCircle); blueDotCircle = null; }
+      if (map.getLayer(userDotLayerId)) {
+        map.removeLayer(userDotLayerId);
+      }
+      if (map.getSource(userDotSourceId)) {
+        map.removeSource(userDotSourceId);
+      }
+      if (map.getLayer(accuracyCircleLayerId)) {
+        map.removeLayer(accuracyCircleLayerId);
+      }
+      if (map.getSource(accuracyCircleSourceId)) {
+        map.removeSource(accuracyCircleSourceId);
+      }
+      
+      // Reset map rotation and pitch
+      map.easeTo({
+        bearing: 0,
+        pitch: 0,
+        duration: 300
+      });
     }
 
     // Release wake lock
@@ -251,14 +280,6 @@
     currentLon = null;
     targetLat = null;
     targetLon = null;
-    currentHeading = 0;
-    targetHeading = 0;
-
-    // Reset map rotation
-    var mapEl = document.getElementById('map');
-    if (mapEl) {
-      mapEl.style.transform = 'rotate(0deg)';
-    }
 
     // Update UI
     document.body.classList.remove('driving');
@@ -343,17 +364,8 @@
     // Check off-route
     checkOffRoute();
 
-    // Auto-center handled by animation loop for smooth panning
-    // Only bump zoom if needed on first fix
-    if (autoCenter && !animFrameId) {
-      var map = DR.mapModule.getMap();
-      if (map && map.getZoom() < 14) {
-        map.setZoom(14, { animate: false });
-      }
-    }
-
-    // Update blue dot
-    updateBlueDot();
+    // Update user dot
+    updateUserDot();
 
     // Update speed overlay
     updateSpeedOverlay();
@@ -416,9 +428,6 @@
     var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
     var bearing = Math.atan2(y, x) * 180 / Math.PI;
     state.heading = (bearing + 360) % 360;
-    if (mapRotationEnabled) {
-      targetHeading = state.heading;
-    }
   }
 
   /** Snap current position to route */
@@ -474,97 +483,140 @@
     }
   }
 
-  /** Update or create blue dot marker */
-  function updateBlueDot() {
+  /** Update or create user dot on map */
+  function updateUserDot() {
     var map = DR.mapModule.getMap();
-    if (!map) return;
+    if (!map || !map.isStyleLoaded()) return;
 
     var lat = currentLat || state.lat;
     var lon = currentLon || state.lon;
     if (lat === null) return;
 
-    var rotation = state.heading !== null ? state.heading : 0;
-    var hasHeading = state.heading !== null;
+    // Create user dot source if it doesn't exist
+    if (!map.getSource(userDotSourceId)) {
+      map.addSource(userDotSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [lon, lat]
+          }
+        }
+      });
 
-    var dotHtml = '<div class="blue-dot-container">' +
-      (hasHeading ? '<div class="blue-dot-cone" style="transform:rotate(' + rotation + 'deg)"></div>' : '') +
-      '<div class="blue-dot"></div>' +
-      '</div>';
-
-    if (!blueDotMarker) {
-      blueDotMarker = L.marker([lat, lon], {
-        icon: L.divIcon({
-          className: 'blue-dot-icon',
-          html: dotHtml,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20]
-        }),
-        zIndexOffset: 2000,
-        interactive: false
-      }).addTo(map);
-
-      // Accuracy circle
-      blueDotCircle = L.circle([lat, lon], {
-        radius: state.accuracy || 20,
-        color: 'rgba(255,255,255,0.6)',
-        fillColor: 'rgba(255,255,255,0.6)',
-        fillOpacity: 0.1,
-        weight: 1,
-        opacity: 0.3
-      }).addTo(map);
+      // Add circle layer for user position (white dot, not blue)
+      map.addLayer({
+        id: userDotLayerId,
+        type: 'circle',
+        source: userDotSourceId,
+        paint: {
+          'circle-radius': 8,
+          'circle-color': '#ffffff',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': 'rgba(0,0,0,0.3)',
+          'circle-opacity': 1,
+          'circle-stroke-opacity': 1
+        }
+      });
     } else {
-      blueDotMarker.setLatLng([lat, lon]);
-      blueDotMarker.setIcon(L.divIcon({
-        className: 'blue-dot-icon',
-        html: dotHtml,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20]
-      }));
-      if (blueDotCircle) {
-        blueDotCircle.setLatLng([lat, lon]);
-        if (state.accuracy) blueDotCircle.setRadius(state.accuracy);
+      // Update user dot position
+      map.getSource(userDotSourceId).setData({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lon, lat]
+        }
+      });
+    }
+
+    // Create accuracy circle source if it doesn't exist
+    if (!map.getSource(accuracyCircleSourceId) && state.accuracy) {
+      // Create a circle polygon for the accuracy area
+      var center = [lon, lat];
+      var radiusInKm = (state.accuracy || 20) / 1000; // Convert meters to km
+      var options = { steps: 80, units: 'kilometers' };
+      
+      // Simple circle generation (approximation)
+      var coordinates = [];
+      var steps = 64;
+      for (var i = 0; i <= steps; i++) {
+        var angle = (i * 360 / steps) * Math.PI / 180;
+        var dx = radiusInKm * Math.cos(angle) / 111; // Rough conversion to degrees
+        var dy = radiusInKm * Math.sin(angle) / 111;
+        coordinates.push([center[0] + dx, center[1] + dy]);
       }
+
+      map.addSource(accuracyCircleSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [coordinates]
+          }
+        }
+      });
+
+      map.addLayer({
+        id: accuracyCircleLayerId,
+        type: 'fill',
+        source: accuracyCircleSourceId,
+        paint: {
+          'fill-color': 'rgba(255,255,255,0.1)',
+          'fill-outline-color': 'rgba(255,255,255,0.3)',
+          'fill-opacity': 0.1
+        }
+      });
+    } else if (map.getSource(accuracyCircleSourceId) && state.accuracy) {
+      // Update accuracy circle
+      var center = [lon, lat];
+      var radiusInKm = state.accuracy / 1000;
+      var coordinates = [];
+      var steps = 64;
+      for (var i = 0; i <= steps; i++) {
+        var angle = (i * 360 / steps) * Math.PI / 180;
+        var dx = radiusInKm * Math.cos(angle) / 111;
+        var dy = radiusInKm * Math.sin(angle) / 111;
+        coordinates.push([center[0] + dx, center[1] + dy]);
+      }
+
+      map.getSource(accuracyCircleSourceId).setData({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [coordinates]
+        }
+      });
     }
   }
 
-  /** Smooth animation loop for blue dot */
+  /** Smooth animation loop for user dot and camera movement */
   function startAnimation() {
     function animate() {
       if (!tracking) return;
+      var map = DR.mapModule.getMap();
+      
       if (targetLat !== null && currentLat !== null) {
         // Lerp toward target (0.3 = snappy, catches up fast)
         var lerp = 0.3;
         currentLat += (targetLat - currentLat) * lerp;
         currentLon += (targetLon - currentLon) * lerp;
 
-        // Update marker position
-        if (blueDotMarker) {
-          blueDotMarker.setLatLng([currentLat, currentLon]);
-        }
-        if (blueDotCircle) {
-          blueDotCircle.setLatLng([currentLat, currentLon]);
-        }
+        // Update user dot position
+        updateUserDot();
+        
         // Smooth map pan + rotation to interpolated position
-        if (autoCenter) {
-          var map = DR.mapModule ? DR.mapModule.getMap() : null;
-          if (map) {
-            map.setView([currentLat, currentLon], map.getZoom(), { animate: false });
-          }
-        }
-        // Rotate map to heading (direction of travel points up)
-        if (mapRotationEnabled && tracking) {
-          // Smooth angle interpolation (shortest path around 360)
-          var diff = targetHeading - currentHeading;
-          if (diff > 180) diff -= 360;
-          if (diff < -180) diff += 360;
-          currentHeading += diff * 0.12;
-          currentHeading = ((currentHeading % 360) + 360) % 360;
-
-          var mapEl = document.getElementById('map');
-          if (mapEl) {
-            mapEl.style.transform = 'rotate(' + (-currentHeading) + 'deg)';
-            mapEl.style.transformOrigin = '50% 50%';
-          }
+        if (autoCenter && map) {
+          var bearing = state.heading !== null ? state.heading : 0;
+          
+          map.easeTo({
+            center: [currentLon, currentLat],
+            bearing: bearing,
+            pitch: tracking ? 50 : 0, // 3D perspective when driving
+            zoom: map.getZoom(),
+            duration: 0 // Instant for smooth 60fps updates
+          });
         }
       }
       animFrameId = requestAnimationFrame(animate);
@@ -665,7 +717,7 @@
     }
   }
 
-  /** Passive locate -- just show blue dot on map, no driving mode, no alerts.
+  /** Passive locate -- just show user dot on map, no driving mode, no alerts.
    *  Called automatically on page load. Doesn't need user gesture on most browsers
    *  for getCurrentPosition (only watchPosition sometimes needs it). */
   var passiveWatchId = null;
@@ -688,41 +740,51 @@
         state.lon = lon;
         state.accuracy = acc;
 
-        // Show blue dot
+        // Show user dot
         var map = DR.mapModule.getMap();
-        if (!map) return;
+        if (!map || !map.isStyleLoaded()) return;
 
-        if (!blueDotMarker) {
-          blueDotMarker = L.marker([lat, lon], {
-            icon: L.divIcon({
-              className: 'blue-dot-icon',
-              html: '<div class="blue-dot-container"><div class="blue-dot"></div></div>',
-              iconSize: [40, 40],
-              iconAnchor: [20, 20]
-            }),
-            zIndexOffset: 2000,
-            interactive: false
-          }).addTo(map);
+        if (!map.getSource(userDotSourceId)) {
+          map.addSource(userDotSourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [lon, lat]
+              }
+            }
+          });
 
-          blueDotCircle = L.circle([lat, lon], {
-            radius: acc || 20,
-            color: 'rgba(255,255,255,0.6)',
-            fillColor: 'rgba(255,255,255,0.6)',
-            fillOpacity: 0.1,
-            weight: 1,
-            opacity: 0.3
-          }).addTo(map);
+          map.addLayer({
+            id: userDotLayerId,
+            type: 'circle',
+            source: userDotSourceId,
+            paint: {
+              'circle-radius': 8,
+              'circle-color': '#ffffff',
+              'circle-stroke-width': 3,
+              'circle-stroke-color': 'rgba(0,0,0,0.3)',
+              'circle-opacity': 1,
+              'circle-stroke-opacity': 1
+            }
+          });
 
           // Center map on user if they're in the UAE region
           if (lat > 22 && lat < 27 && lon > 51 && lon < 57) {
-            map.setView([lat, lon], 12, { animate: true });
+            map.easeTo({
+              center: [lon, lat],
+              zoom: 12
+            });
           }
         } else {
-          blueDotMarker.setLatLng([lat, lon]);
-          if (blueDotCircle) {
-            blueDotCircle.setLatLng([lat, lon]);
-            if (acc) blueDotCircle.setRadius(acc);
-          }
+          map.getSource(userDotSourceId).setData({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [lon, lat]
+            }
+          });
         }
       },
       function(err) {

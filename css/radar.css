@@ -40,15 +40,42 @@ html, body {
 
 #map {
   position: fixed;
-  top: -15%; left: -15%; right: -15%; bottom: -15%;
-  width: 130%; height: 130%;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
   z-index: 0;
-  transition: transform 0s linear;
-  will-change: transform;
 }
 
-.leaflet-control-zoom,
-.leaflet-control-attribution { display: none; }
+/* MapLibre GL JS Styles */
+.maplibregl-ctrl { display: none; }
+.maplibregl-popup {
+  font-family: var(--font);
+}
+.maplibregl-popup-content {
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--fg);
+  padding: 12px;
+  max-width: 200px;
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--card-solid);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--card-solid);
+}
+.radar-popup .maplibregl-popup-content {
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--fg);
+  padding: 10px;
+  font-size: 14px;
+}
 
 /* ======== TOP BAR ======== */
 
@@ -791,34 +818,9 @@ body.hud-active .leaflet-control-attribution {
 .switch input:checked + .slider { background: rgba(255,255,255,0.2); }
 .switch input:checked + .slider::before { transform: translateX(20px); background: var(--fg); }
 
-/* ======== BLUE DOT ======== */
-
-.blue-dot-container {
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-}
-.blue-dot {
-  width: 14px; height: 14px;
-  background: var(--fg);
-  border: 3px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  box-shadow: 0 0 12px rgba(255,255,255,0.3);
-}
-
 /* ======== RADAR MARKERS ======== */
 
 .radar-cam-icon { background: none !important; border: none !important; }
-
-.radar-popup .leaflet-popup-content-wrapper {
-  background: var(--card-solid);
-  color: var(--fg);
-  border-radius: var(--radius-lg);
-  font-family: var(--font);
-  font-size: 13px;
-  border: 1px solid var(--border);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-}
-.radar-popup .leaflet-popup-tip { background: var(--card-solid); }
 
 /* ======== LOADING ======== */
 
