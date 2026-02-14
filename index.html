@@ -170,6 +170,13 @@
             <label class="switch"><input type="checkbox" id="audioToggle" checked><span class="slider"></span></label>
         </div>
         <div class="setting-row">
+            <span>Volume</span>
+            <div class="setting-slider">
+                <input type="range" id="volumeSlider" min="0" max="100" value="80" class="range-slider" oninput="setVolume(this.value)">
+                <span id="volumeVal" class="range-val">80%</span>
+            </div>
+        </div>
+        <div class="setting-row">
             <span>Theme</span>
             <div class="setting-pills">
                 <button class="pill active" id="themeAuto" onclick="setTheme('auto')">Auto</button>
@@ -188,6 +195,47 @@
 <div id="speedPicker" style="display:none"></div>
 <div id="historyPanel" style="display:none"></div>
 <div id="sharePanel" style="display:none"></div>
+
+<!-- Onboarding (first visit only) -->
+<div id="onboarding" class="onboarding" style="display:none">
+    <div class="onboarding-card">
+        <div class="onboarding-title">Dibba <span style="font-weight:400">Radar</span></div>
+        <div class="onboarding-sub">Speed camera companion for UAE highways</div>
+        <div class="onboarding-items">
+            <div class="onboarding-item">
+                <span class="onboarding-dot" style="background:#ff1744"></span>
+                <span>Red dots = cameras enforcing 120+ km/h</span>
+            </div>
+            <div class="onboarding-item">
+                <span class="onboarding-dot" style="background:#ff6d00"></span>
+                <span>Orange dots = 80-119 km/h cameras</span>
+            </div>
+            <div class="onboarding-item">
+                <span class="onboarding-dot" style="background:#ffd600"></span>
+                <span>Yellow dots = under 80 km/h zones</span>
+            </div>
+            <div class="onboarding-item">
+                <span class="onboarding-dot" style="background:#78909c"></span>
+                <span>Grey dots = unknown speed limit</span>
+            </div>
+            <div class="onboarding-sep"></div>
+            <div class="onboarding-item">
+                <span class="onboarding-line" style="background:#ff1744"></span>
+                <span>Red roads = heavy camera coverage</span>
+            </div>
+            <div class="onboarding-item">
+                <span class="onboarding-line" style="background:#00e676"></span>
+                <span>Green roads = clear stretches (5+ km gap)</span>
+            </div>
+            <div class="onboarding-sep"></div>
+            <div class="onboarding-item">
+                <span style="font-size:14px;width:24px;text-align:center">+20</span>
+                <span>UAE fine threshold: limit + 20 km/h</span>
+            </div>
+        </div>
+        <button class="onboarding-btn" onclick="dismissOnboarding()">GOT IT</button>
+    </div>
+</div>
 
 <!-- JS modules -->
 <script src="js/utils.js"></script>

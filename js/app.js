@@ -93,6 +93,46 @@
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
   };
 
+  // Volume control
+  window.setVolume = function (val) {
+    var pct = parseInt(val, 10);
+    var label = document.getElementById('volumeVal');
+    if (label) label.textContent = pct + '%';
+    if (DR.audio && DR.audio.setVolume) DR.audio.setVolume(pct / 100);
+    try { localStorage.setItem('dr_volume', pct); } catch (e) {}
+  };
+
+  // Restore saved volume on init
+  (function restoreVolume() {
+    try {
+      var saved = localStorage.getItem('dr_volume');
+      if (saved !== null) {
+        var pct = parseInt(saved, 10);
+        var slider = document.getElementById('volumeSlider');
+        var label = document.getElementById('volumeVal');
+        if (slider) slider.value = pct;
+        if (label) label.textContent = pct + '%';
+        if (DR.audio && DR.audio.setVolume) DR.audio.setVolume(pct / 100);
+      }
+    } catch (e) {}
+  })();
+
+  // Onboarding (first visit only)
+  window.dismissOnboarding = function () {
+    var el = document.getElementById('onboarding');
+    if (el) el.style.display = 'none';
+    try { localStorage.setItem('dr_onboarded', '1'); } catch (e) {}
+  };
+
+  (function checkOnboarding() {
+    try {
+      if (!localStorage.getItem('dr_onboarded')) {
+        var el = document.getElementById('onboarding');
+        if (el) el.style.display = 'flex';
+      }
+    } catch (e) {}
+  })();
+
   // Legacy map functions (for modules that still reference them)
   window.flipDir = function () { if (DR.mapModule) DR.mapModule.flipDir(); };
   window.toggleAdd = function () { if (DR.mapModule) DR.mapModule.toggleAdd(); };

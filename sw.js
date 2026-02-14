@@ -1,6 +1,6 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v16';
+var CACHE_NAME = 'dibba-radar-v17';
 
 var APP_FILES = [
   './',

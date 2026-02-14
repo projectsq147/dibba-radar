@@ -5,6 +5,7 @@
 
   var audioContext = null;
   var isEnabled = true;
+  var masterVolume = 0.8; // 0.0 - 1.0
 
   function init() {
     // Initialize Web Audio Context on first user interaction
@@ -19,14 +20,28 @@
     });
   }
 
+  var masterGainNode = null;
+
   function initAudioContext() {
     if (!audioContext) {
       try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        masterGainNode = audioContext.createGain();
+        masterGainNode.gain.value = masterVolume;
+        masterGainNode.connect(audioContext.destination);
       } catch (e) {
         console.warn('Web Audio API not supported:', e);
       }
     }
+  }
+
+  function getDestination() {
+    return masterGainNode || (audioContext ? audioContext.destination : null);
+  }
+
+  function setVolume(v) {
+    masterVolume = Math.max(0, Math.min(1, v));
+    if (masterGainNode) masterGainNode.gain.value = masterVolume;
   }
 
   function ensureAudioContext() {
@@ -113,7 +128,7 @@
     
     oscillator.connect(gainNode);
     gainNode.connect(pulseGain);
-    pulseGain.connect(ctx.destination);
+    pulseGain.connect(getDestination() || ctx.destination);
     
     oscillator.frequency.value = 300; // Low frequency
     oscillator.type = 'sine';
@@ -145,7 +160,7 @@
       var gainNode = ctx.createGain();
       
       oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      gainNode.connect(getDestination() || ctx.destination);
       
       oscillator.frequency.value = beep.freq;
       oscillator.type = 'sine';
@@ -233,6 +248,7 @@
     stopSpeedWarning: stopSpeedWarning,
     testAudio: testAudio,
     isEnabled: isAudioEnabled,
-    setEnabled: setEnabled
+    setEnabled: setEnabled,
+    setVolume: setVolume
   };
 })();
