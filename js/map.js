@@ -21,21 +21,7 @@
   function initMap() {
     map = new maplibregl.Map({
       container: 'map',
-      style: {
-        version: 8,
-        sources: {
-          'carto': {
-            type: 'raster',
-            tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
-            tileSize: 256
-          }
-        },
-        layers: [{
-          id: 'carto',
-          type: 'raster',
-          source: 'carto'
-        }]
-      },
+      style: 'https://tiles.openfreemap.org/styles/dark',
       center: [55.9, 25.42], // [lng, lat] - MapLibre order!
       zoom: 10,
       bearing: 0,

@@ -1,6 +1,6 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v18';
+var CACHE_NAME = 'dibba-radar-v19';
 
 var APP_FILES = [
   './',
@@ -29,6 +29,8 @@ var APP_FILES = [
   './js/history.js',
   './js/share.js',
   './js/route-picker.js',
+  './js/trip-log.js',
+  './js/reports.js',
   './js/app.js',
   './data/routes-index.json',
   './assets/icon-192.png',
@@ -83,7 +85,7 @@ self.addEventListener('fetch', function (event) {
   var url = event.request.url;
 
   // Map tiles: cache-first
-  if (url.indexOf('basemaps.cartocdn.com') >= 0 || url.indexOf('tile.openstreetmap.org') >= 0) {
+  if (url.indexOf('basemaps.cartocdn.com') >= 0 || url.indexOf('tile.openstreetmap.org') >= 0 || url.indexOf('tiles.openfreemap.org') >= 0) {
     event.respondWith(
       caches.open(CACHE_NAME).then(function (cache) {
         return cache.match(event.request).then(function (cached) {

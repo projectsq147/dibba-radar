@@ -6,6 +6,66 @@
   var visible = false;
   var wakeLock = null;
   var updateTimer = null;
+  var _turnFlashOn = false;
+  var _turnFlashTimer = null;
+
+  /** Return an SVG string for a maneuver type + modifier */
+  function getTurnSvg(type, modifier) {
+    var s = 'http://www.w3.org/2000/svg';
+    var attrs = 'xmlns="' + s + '" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"';
+
+    if (type === 'arrive') {
+      // Flag / destination icon
+      return '<svg ' + attrs + '><path d="M16 28V6"/><path d="M16 6l10 4-10 4"/></svg>';
+    }
+    if (type === 'roundabout' || type === 'rotary') {
+      return '<svg ' + attrs + '><circle cx="16" cy="14" r="6"/><path d="M16 20v8"/><path d="M22 14l4-6"/></svg>';
+    }
+    if (type === 'merge') {
+      return '<svg ' + attrs + '><path d="M10 6l6 10 6-10"/><path d="M16 16v12"/></svg>';
+    }
+    if (type === 'fork') {
+      if (modifier === 'left' || modifier === 'slight left') {
+        return '<svg ' + attrs + '><path d="M16 28V16"/><path d="M16 16L8 6"/><path d="M16 16l8-2"/></svg>';
+      }
+      return '<svg ' + attrs + '><path d="M16 28V16"/><path d="M16 16l8-10"/><path d="M16 16L8 14"/></svg>';
+    }
+
+    // U-turn
+    if (modifier === 'uturn') {
+      return '<svg ' + attrs + '><path d="M20 28V12a6 6 0 0 0-12 0v2"/><path d="M12 10l-4 4 4 4"/></svg>';
+    }
+
+    // Directional turns
+    if (modifier === 'sharp left') {
+      return '<svg ' + attrs + '><path d="M16 28V14"/><path d="M16 14L6 8"/><path d="M6 8l2 6"/></svg>';
+    }
+    if (modifier === 'left') {
+      return '<svg ' + attrs + '><path d="M16 28V14"/><path d="M16 14H6"/><path d="M10 10L6 14l4 4"/></svg>';
+    }
+    if (modifier === 'slight left') {
+      return '<svg ' + attrs + '><path d="M18 28V16"/><path d="M18 16L8 6"/><path d="M8 6l1 7"/></svg>';
+    }
+    if (modifier === 'sharp right') {
+      return '<svg ' + attrs + '><path d="M16 28V14"/><path d="M16 14l10-6"/><path d="M26 8l-2 6"/></svg>';
+    }
+    if (modifier === 'right') {
+      return '<svg ' + attrs + '><path d="M16 28V14"/><path d="M16 14h10"/><path d="M22 10l4 4-4 4"/></svg>';
+    }
+    if (modifier === 'slight right') {
+      return '<svg ' + attrs + '><path d="M14 28V16"/><path d="M14 16l10-10"/><path d="M24 6l-1 7"/></svg>';
+    }
+
+    // Default: straight arrow (depart, new name, straight, continue, etc.)
+    return '<svg ' + attrs + '><path d="M16 28V6"/><path d="M10 12l6-6 6 6"/></svg>';
+  }
+
+  /** Format a distance in meters for display */
+  function formatTurnDist(meters) {
+    if (meters === null || meters === undefined) return '--';
+    if (meters < 1000) return Math.round(meters) + 'm';
+    return (meters / 1000).toFixed(1) + ' km';
+  }
 
   function isVisible() { return visible; }
 
@@ -338,6 +398,53 @@
     var hudOffRoute = document.getElementById('hudOffRoute');
     if (hudOffRoute) {
       hudOffRoute.style.display = gpsState.offRoute ? 'block' : 'none';
+    }
+
+    // Turn-by-turn instruction
+    var hudTurn = document.getElementById('hudTurn');
+    if (hudTurn) {
+      var maneuver = DR.routing ? DR.routing.getNextManeuver() : null;
+      if (maneuver && maneuver.distance !== null) {
+        hudTurn.style.display = 'flex';
+        var iconEl = document.getElementById('hudTurnIcon');
+        var distEl = document.getElementById('hudTurnDist');
+        var nameEl = document.getElementById('hudTurnName');
+
+        if (iconEl) iconEl.innerHTML = getTurnSvg(maneuver.type, maneuver.modifier);
+        if (distEl) distEl.textContent = formatTurnDist(maneuver.distance);
+        if (nameEl) nameEl.textContent = maneuver.name || '';
+
+        // Approaching state
+        if (maneuver.distance < 100) {
+          hudTurn.classList.add('approaching');
+        } else {
+          hudTurn.classList.remove('approaching');
+        }
+
+        // Flash when very close
+        if (maneuver.distance < 30) {
+          if (!_turnFlashTimer) {
+            _turnFlashTimer = setInterval(function () {
+              _turnFlashOn = !_turnFlashOn;
+              hudTurn.style.opacity = _turnFlashOn ? '0.4' : '1';
+            }, 300);
+          }
+        } else {
+          if (_turnFlashTimer) {
+            clearInterval(_turnFlashTimer);
+            _turnFlashTimer = null;
+            _turnFlashOn = false;
+            hudTurn.style.opacity = '1';
+          }
+        }
+      } else {
+        hudTurn.style.display = 'none';
+        if (_turnFlashTimer) {
+          clearInterval(_turnFlashTimer);
+          _turnFlashTimer = null;
+          _turnFlashOn = false;
+        }
+      }
     }
   }
 

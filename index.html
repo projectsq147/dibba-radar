@@ -31,6 +31,9 @@
 <!-- Top bar: branding + controls -->
 <div id="topBar" class="top-bar">
     <div class="top-brand">Dibba <span class="top-brand-accent">Radar</span></div>
+    <button id="tripHistoryBtn" class="top-btn" onclick="toggleTripHistory()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </button>
     <button id="legendBtn" class="top-btn" onclick="toggleLegend()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
     </button>
@@ -115,6 +118,13 @@
 <!-- HUD (driving overlay on top of map) -->
 <div id="hudContainer" class="hud" onclick="hudTap(event)">
     <div class="hud-top">
+        <div id="hudTurn" class="hud-turn" style="display:none">
+            <div id="hudTurnIcon" class="hud-turn-icon"></div>
+            <div class="hud-turn-info">
+                <div id="hudTurnDist" class="hud-turn-dist">--</div>
+                <div id="hudTurnName" class="hud-turn-name"></div>
+            </div>
+        </div>
         <div id="hudCamLabel" class="hud-label">CAMERA IN</div>
         <div id="hudCamDist" class="hud-dist">--</div>
         <div class="hud-bar"><div id="hudCamBar" class="hud-bar-fill"></div></div>
@@ -247,6 +257,46 @@
     </div>
 </div>
 
+<!-- Report picker (long-press on map) -->
+<div id="reportPicker" class="report-picker" style="display:none">
+    <div class="report-title">REPORT</div>
+    <div class="report-options">
+        <button class="report-opt" onclick="submitReport('radar')">
+            <span class="report-dot" style="background:#ff1744"></span>
+            Mobile Radar
+        </button>
+        <button class="report-opt" onclick="submitReport('police')">
+            <span class="report-dot" style="background:#2196f3"></span>
+            Police
+        </button>
+        <button class="report-opt" onclick="submitReport('accident')">
+            <span class="report-dot" style="background:#ff9800"></span>
+            Accident
+        </button>
+        <button class="report-opt" onclick="submitReport('hazard')">
+            <span class="report-dot" style="background:#ffd600"></span>
+            Hazard
+        </button>
+    </div>
+    <button class="report-cancel" onclick="cancelReport()">CANCEL</button>
+</div>
+
+<!-- Trip history panel -->
+<div id="tripHistoryPanel" class="trip-history-panel" style="display:none">
+    <div class="trip-history-header">
+        <span>TRIP HISTORY</span>
+        <button onclick="closeTripHistory()">x</button>
+    </div>
+    <div id="tripHistoryList" class="trip-history-list">
+        <div class="trip-history-empty">No trips recorded yet</div>
+    </div>
+</div>
+
+<!-- Trip summary toast -->
+<div id="tripToast" class="trip-toast" style="display:none">
+    <span id="tripToastText"></span>
+</div>
+
 <!-- JS modules -->
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
@@ -269,6 +319,8 @@
 <script src="js/history.js"></script>
 <script src="js/share.js"></script>
 <script src="js/route-picker.js"></script>
+<script src="js/trip-log.js"></script>
+<script src="js/reports.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

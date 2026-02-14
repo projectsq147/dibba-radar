@@ -24,6 +24,8 @@
     DR.speedTrend.init();
     DR.avgSpeedZones.init();
     DR.share.init();
+    DR.tripLog.init();
+    DR.reports.init();
 
     // Initialize search (for custom routes)
     DR.search.init();
@@ -57,6 +59,9 @@
       if (startBtn && 'geolocation' in navigator) {
         startBtn.style.display = 'block';
       }
+
+      // Setup long-press for community reports
+      setupReportLongPress();
     });
   }
 
@@ -160,9 +165,22 @@
       DR.radarMap.startNearbyAlerts();
       DR.radarMap.setDrivingMode(true);
     }
+    // Start trip recording
+    if (DR.tripLog) DR.tripLog.startTrip();
+    // Request notification permission for background alerts
+    requestNotificationPermission();
   };
 
   window.stopDrive = function () {
+    // End trip and show summary
+    if (DR.tripLog) {
+      var summary = DR.tripLog.endTrip();
+      if (summary && summary.durationMin > 0) {
+        showTripToast(summary);
+      }
+    }
+    // Reset community report alerts
+    if (DR.reports) DR.reports.resetAlerts();
     DR.gps.stopTracking();
     if (DR.radarMap) {
       DR.radarMap.stopNearbyAlerts();
@@ -187,8 +205,182 @@
 
   window.hudStop = function (e) {
     e.stopPropagation();
+    // End trip and show summary
+    if (DR.tripLog) {
+      var summary = DR.tripLog.endTrip();
+      if (summary && summary.durationMin > 0) {
+        showTripToast(summary);
+      }
+    }
+    if (DR.reports) DR.reports.resetAlerts();
     DR.gps.stopTracking();
-    if (DR.radarMap) DR.radarMap.stopNearbyAlerts();
+    if (DR.radarMap) {
+      DR.radarMap.stopNearbyAlerts();
+      DR.radarMap.setDrivingMode(false);
+    }
+  };
+
+  // ========== Trip History ==========
+
+  window.toggleTripHistory = function () {
+    var el = document.getElementById('tripHistoryPanel');
+    if (!el) return;
+    if (el.style.display === 'none') {
+      renderTripHistory();
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  };
+
+  window.closeTripHistory = function () {
+    var el = document.getElementById('tripHistoryPanel');
+    if (el) el.style.display = 'none';
+  };
+
+  function renderTripHistory() {
+    var list = document.getElementById('tripHistoryList');
+    if (!list || !DR.tripLog) return;
+    var trips = DR.tripLog.getTrips();
+    if (!trips || trips.length === 0) {
+      list.innerHTML = '<div class="trip-history-empty">No trips recorded yet</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < trips.length; i++) {
+      var t = trips[i];
+      var d = new Date(t.startTime);
+      var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      html += '<div class="trip-history-item">';
+      html += '<div class="trip-history-date">' + dateStr + ', ' + timeStr + '</div>';
+      html += '<div class="trip-history-stats">';
+      html += '<span>' + t.durationMin + ' min</span>';
+      html += '<span>' + t.totalDistance + ' km</span>';
+      html += '<span>Max: ' + t.maxSpeed + '</span>';
+      html += '<span>Avg: ' + t.avgSpeed + '</span>';
+      html += '<span>' + t.camerasEncountered + ' cam' + (t.camerasEncountered !== 1 ? 's' : '') + '</span>';
+      html += '</div>';
+      html += '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  function showTripToast(summary) {
+    var toast = document.getElementById('tripToast');
+    var text = document.getElementById('tripToastText');
+    if (!toast || !text) return;
+    text.textContent = 'Trip complete: ' + summary.durationMin + ' min, ' + summary.totalDistance + ' km, max ' + summary.maxSpeed + ' km/h';
+    toast.style.display = 'block';
+    setTimeout(function () {
+      toast.style.display = 'none';
+    }, 5000);
+  }
+
+  // ========== Community Reports ==========
+
+  var reportLatLng = null;
+  var longPressTimer = null;
+
+  function setupReportLongPress() {
+    var mapEl = document.getElementById('map');
+    if (!mapEl) return;
+
+    // Touch events for mobile
+    mapEl.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      var touch = e.touches[0];
+      longPressTimer = setTimeout(function () {
+        var map = DR.mapModule ? DR.mapModule.getMap() : null;
+        if (!map) return;
+        var point = map.unproject([touch.clientX, touch.clientY]);
+        reportLatLng = { lat: point.lat, lon: point.lng };
+        showReportPicker();
+      }, 500);
+    }, { passive: true });
+
+    mapEl.addEventListener('touchend', function () {
+      clearTimeout(longPressTimer);
+    }, { passive: true });
+
+    mapEl.addEventListener('touchmove', function () {
+      clearTimeout(longPressTimer);
+    }, { passive: true });
+
+    // Right-click for desktop
+    var map = DR.mapModule ? DR.mapModule.getMap() : null;
+    if (map) {
+      map.on('contextmenu', function (e) {
+        e.preventDefault();
+        reportLatLng = { lat: e.lngLat.lat, lon: e.lngLat.lng };
+        showReportPicker();
+      });
+    } else if (DR.mapModule) {
+      DR.mapModule.onReady(function () {
+        var m = DR.mapModule.getMap();
+        if (m) {
+          m.on('contextmenu', function (e) {
+            e.preventDefault();
+            reportLatLng = { lat: e.lngLat.lat, lon: e.lngLat.lng };
+            showReportPicker();
+          });
+        }
+      });
+    }
+  }
+
+  function showReportPicker() {
+    var el = document.getElementById('reportPicker');
+    if (el) el.style.display = 'flex';
+  }
+
+  window.submitReport = function (type) {
+    if (reportLatLng && DR.reports) {
+      DR.reports.addReport(reportLatLng.lat, reportLatLng.lon, type);
+    }
+    reportLatLng = null;
+    var el = document.getElementById('reportPicker');
+    if (el) el.style.display = 'none';
+  };
+
+  window.cancelReport = function () {
+    reportLatLng = null;
+    var el = document.getElementById('reportPicker');
+    if (el) el.style.display = 'none';
+  };
+
+  // ========== Background Notifications ==========
+
+  var notifiedCameras = {}; // track by lat,lon key
+
+  function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+
+  function sendBackgroundCameraNotification(distM, limitStr) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    if (!document.hidden) return; // only when backgrounded
+
+    var body = distM + 'm';
+    if (limitStr && limitStr !== '?' && limitStr !== 'unknown') {
+      body += ' - ' + limitStr + ' km/h';
+    }
+    try {
+      new Notification('Camera ahead', {
+        body: body,
+        icon: 'assets/icon-192.png',
+        tag: 'camera-alert'
+      });
+    } catch (e) { /* notification blocked or unavailable */ }
+  }
+
+  // Expose for gps.js / radar-map.js
+  DR._bgNotify = {
+    notifiedCameras: notifiedCameras,
+    sendBackgroundCameraNotification: sendBackgroundCameraNotification
   };
 
   // ========== Navigation pipeline ==========

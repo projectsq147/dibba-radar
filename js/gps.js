@@ -313,6 +313,11 @@
     var slowDown = document.getElementById('slowDownOverlay');
     if (slowDown) slowDown.style.display = 'none';
 
+    // Clear turn-by-turn steps
+    if (DR.routing && DR.routing.clearSteps) {
+      DR.routing.clearSteps();
+    }
+
     // Reset alerts
     if (DR.alerts && DR.alerts.reset) {
       DR.alerts.reset();
@@ -378,6 +383,21 @@
     // Check average speed zones
     if (DR.avgSpeedZones && DR.avgSpeedZones.check) {
       DR.avgSpeedZones.check(state);
+    }
+
+    // Update turn-by-turn progress
+    if (DR.routing && DR.routing.updateProgress) {
+      DR.routing.updateProgress(state.lat, state.lon);
+    }
+
+    // Record trip point
+    if (DR.tripLog) {
+      DR.tripLog.recordPoint(state.lat, state.lon, state.speed);
+    }
+
+    // Check community report alerts during driving
+    if (DR.reports && DR.reports.checkNearbyAlerts) {
+      DR.reports.checkNearbyAlerts(state.lat, state.lon);
     }
 
     // Update HUD if visible

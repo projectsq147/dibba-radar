@@ -254,6 +254,10 @@
     }
     nearbyAlertActive = false;
     lastAlertCam = null;
+    // Reset trip camera tracking
+    if (checkNearbyCameras._recordedCams) checkNearbyCameras._recordedCams = {};
+    // Reset background notification tracking
+    if (DR._bgNotify) DR._bgNotify.notifiedCameras = {};
   }
 
   /** Check for cameras near current position */
@@ -292,6 +296,26 @@
     var criticalDist = 0.3;
 
     if (closest && closestDist < 2) {
+      // Record camera encounter for trip log when within 50m
+      if (closestDist < 0.05 && DR.tripLog) {
+        var tripCamKey = closest.lat + ',' + closest.lon;
+        if (!checkNearbyCameras._recordedCams) checkNearbyCameras._recordedCams = {};
+        if (!checkNearbyCameras._recordedCams[tripCamKey]) {
+          checkNearbyCameras._recordedCams[tripCamKey] = true;
+          DR.tripLog.recordCamera();
+        }
+      }
+
+      // Background notification when within 500m
+      if (closestDist < 0.5 && DR._bgNotify) {
+        var bgCamKey = closest.lat + ',' + closest.lon;
+        if (!DR._bgNotify.notifiedCameras[bgCamKey]) {
+          DR._bgNotify.notifiedCameras[bgCamKey] = true;
+          var distM = Math.round(closestDist * 1000);
+          DR._bgNotify.sendBackgroundCameraNotification(distM, closest.speed_limit);
+        }
+      }
+
       // Trigger audio alert
       if (closestDist < warningDist && DR.audio) {
         var camKey = closest.lat + ',' + closest.lon;

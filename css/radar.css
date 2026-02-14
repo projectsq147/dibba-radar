@@ -1032,6 +1032,232 @@ body.hud-active .leaflet-control-attribution {
 }
 .onboarding-btn:active { transform: scale(0.96); }
 
+/* ======== TURN-BY-TURN INSTRUCTION ======== */
+
+.hud-turn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  transition: opacity 0.2s;
+}
+.hud-turn-icon {
+  width: 36px; height: 36px;
+  flex-shrink: 0;
+  transition: width 0.2s, height 0.2s;
+}
+.hud-turn-icon svg {
+  width: 100%; height: 100%;
+}
+.hud-turn-info {
+  flex: 1;
+  min-width: 0;
+}
+.hud-turn-dist {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--fg);
+  transition: font-size 0.2s, color 0.2s;
+}
+.hud-turn-name {
+  font-size: 12px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.hud-turn.approaching .hud-turn-dist {
+  font-size: 28px;
+  color: #00e676;
+}
+.hud-turn.approaching .hud-turn-icon {
+  width: 44px; height: 44px;
+}
+
+/* ======== REPORT PICKER (glassmorphism bottom sheet) ======== */
+
+.report-picker {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 960;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 20px 24px env(safe-area-inset-bottom, 20px);
+  flex-direction: column;
+  align-items: stretch;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+}
+
+.report-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.report-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.report-opt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.report-opt:active {
+  background: rgba(255,255,255,0.08);
+  transform: scale(0.98);
+}
+
+.report-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.report-cancel {
+  margin-top: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+.report-cancel:active {
+  color: var(--fg);
+  transform: scale(0.98);
+}
+
+/* ======== TRIP HISTORY PANEL ======== */
+
+.trip-history-panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 955;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 20px 24px env(safe-area-inset-bottom, 20px);
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+}
+
+.trip-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+}
+.trip-history-header button {
+  background: none; border: none;
+  color: var(--muted); font-size: 18px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.trip-history-header button:hover { color: var(--fg); }
+
+.trip-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trip-history-empty {
+  text-align: center;
+  color: var(--dim);
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+.trip-history-item {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+}
+
+.trip-history-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 6px;
+}
+
+.trip-history-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ======== TRIP TOAST ======== */
+
+.trip-toast {
+  display: none;
+  position: fixed;
+  bottom: 80px; left: 16px; right: 16px;
+  z-index: 970;
+  background: var(--card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: toastSlideUp 0.3s ease;
+}
+
+@keyframes toastSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hide trip history button during driving */
+body.driving #tripHistoryBtn { display: none; }
+body.hud-active #tripHistoryBtn { display: none !important; }
+
 /* ======== RESPONSIVE ======== */
 
 @media (max-width: 380px) {
