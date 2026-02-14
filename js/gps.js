@@ -610,11 +610,15 @@
         if (autoCenter && map) {
           var bearing = state.heading !== null ? state.heading : 0;
           
+          var targetZoom = map.getZoom();
+          // Force minimum zoom 16 when driving (street-level)
+          if (tracking && targetZoom < 16) targetZoom = 16;
+          
           map.easeTo({
             center: [currentLon, currentLat],
             bearing: bearing,
             pitch: tracking ? 50 : 0, // 3D perspective when driving
-            zoom: map.getZoom(),
+            zoom: targetZoom,
             duration: 0 // Instant for smooth 60fps updates
           });
         }

@@ -106,12 +106,18 @@
   window.startDrive = function () {
     DR.gps.startTracking();
     // Start proximity alerts for all cameras
-    if (DR.radarMap) DR.radarMap.startNearbyAlerts();
+    if (DR.radarMap) {
+      DR.radarMap.startNearbyAlerts();
+      DR.radarMap.setDrivingMode(true);
+    }
   };
 
   window.stopDrive = function () {
     DR.gps.stopTracking();
-    if (DR.radarMap) DR.radarMap.stopNearbyAlerts();
+    if (DR.radarMap) {
+      DR.radarMap.stopNearbyAlerts();
+      DR.radarMap.setDrivingMode(false);
+    }
   };
 
   window.centerOnMe = function () {

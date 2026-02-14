@@ -421,6 +421,16 @@
   /** Get nearest camera state (for HUD to read) */
   function getNearestCam() { return nearestCamState; }
 
+  /** Dim segments during driving, restore when stopped */
+  function setDrivingMode(on) {
+    var map = DR.mapModule ? DR.mapModule.getMap() : null;
+    if (!map) return;
+    if (map.getLayer(roadSegmentsLayerId)) {
+      map.setPaintProperty(roadSegmentsLayerId, 'line-opacity', on ? 0.15 : 0.7);
+      map.setPaintProperty(roadSegmentsLayerId, 'line-width', on ? 2 : 4);
+    }
+  }
+
   DR.radarMap = {
     init: init,
     render: render,
@@ -429,6 +439,7 @@
     stopNearbyAlerts: stopNearbyAlerts,
     checkNearbyCameras: checkNearbyCameras,
     getNearestCam: getNearestCam,
+    setDrivingMode: setDrivingMode,
     getData: getData,
     isLoaded: isLoaded
   };

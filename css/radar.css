@@ -647,17 +647,17 @@ body.driving .center-btn { display: flex; }
 
 .hud-limit-badge {
   position: absolute;
-  top: -4px; right: -28px;
-  width: 42px; height: 42px;
+  bottom: -2px; right: -22px;
+  width: 34px; height: 34px;
   border-radius: 50%;
   background: var(--fg);
-  border: 3px solid var(--destructive);
+  border: 2.5px solid var(--destructive);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 13px;
   color: var(--primary-fg);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 /* HUD bottom */
