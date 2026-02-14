@@ -18,15 +18,32 @@
 <!-- Full-screen map -->
 <div id="map"></div>
 
-<!-- Top bar: branding + legend toggle -->
+<!-- Top bar: search + controls -->
 <div id="topBar" class="top-bar">
-    <div class="top-brand">Dibba <span class="top-brand-accent">Radar</span></div>
+    <div class="search-wrap" id="searchWrap">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="searchInput" class="search-input" type="text" placeholder="Where to?" autocomplete="off">
+        <button id="clearSearch" class="search-clear" onclick="clearSearch()" style="display:none">&times;</button>
+    </div>
     <button id="legendBtn" class="top-btn" onclick="toggleLegend()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
     </button>
     <button id="settingsBtn" class="top-btn" onclick="toggleSettings()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
+</div>
+
+<!-- Search results dropdown -->
+<div id="searchResults" class="search-results"></div>
+
+<!-- Route info bar (after routing) -->
+<div id="routeInfo" class="route-info" style="display:none">
+    <div class="route-info-stats">
+        <div class="ri-stat"><span class="ri-val" id="riDist">--</span><span class="ri-label">km</span></div>
+        <div class="ri-stat"><span class="ri-val" id="riTime">--</span><span class="ri-label">min</span></div>
+        <div class="ri-stat"><span class="ri-val" id="riCams">--</span><span class="ri-label">cams</span></div>
+    </div>
+    <button class="ri-go" id="goBtn" onclick="startNavigation()">GO</button>
 </div>
 
 <!-- Legend overlay -->
@@ -137,8 +154,7 @@
 <!-- Hidden elements needed by modules -->
 <div id="panel" style="display:none"></div>
 <div id="routePicker" style="display:none"></div>
-<div id="searchResults" style="display:none"></div>
-<div id="loadingOverlay" style="display:none"><div id="loadingText"></div></div>
+<div id="loadingOverlay" class="loading-overlay" style="display:none"><div id="loadingText" class="loading-text"></div></div>
 <div id="overlay" style="display:none"></div>
 <div id="speedPicker" style="display:none"></div>
 <div id="historyPanel" style="display:none"></div>
