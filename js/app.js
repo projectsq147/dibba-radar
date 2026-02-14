@@ -1,48 +1,61 @@
-/* js/app.js -- Entry point, initializes everything, wires up driving mode */
+/* js/app.js -- Entry point, route picker, module coordination */
 (function () {
   'use strict';
   var DR = window.DibbaRadar = window.DibbaRadar || {};
 
   function init() {
-    // Initialize pins from storage
+    // Initialize core modules
+    DR.storage.init();
     DR.pins.init();
+    DR.settings.init();
+    DR.history.init();
+    DR.theme.init();
+    DR.audio.init();
+    DR.speedTrend.init();
+    DR.avgSpeedZones.init();
+    DR.share.init();
 
-    // Initialize map
-    DR.mapModule.init();
+    // Initialize route picker (shows home screen)
+    DR.routePicker.init();
 
-    // Load route data then render
-    DR.cameras.load(function (rd) {
-      DR.mapModule.drawRoutes(rd);
-      DR.mapModule.drawMap();
+    // Initialize search (for custom routes)
+    DR.search.init();
 
-      // Fetch Waze alerts
-      DR.waze.fetch(DR.mapModule.getWazeLayer());
-      DR.waze.startAutoRefresh(DR.mapModule.getWazeLayer());
-
-      // Set up GPS drag handler (disables auto-center on manual pan)
-      if (DR.gps && DR.gps.setupMapDragHandler) {
-        DR.gps.setupMapDragHandler();
-      }
-
-      // Check GPS availability, show/hide start button
-      checkGPSAvailability();
-    });
+    // Map will be initialized when a route is selected
   }
 
-  /** Check if GPS is available, show start button, and get passive location */
+  /** Show start button if GPS is available, get passive location */
   function checkGPSAvailability() {
     var btn = document.getElementById('startDriveBtn');
     if (!btn) return;
     if ('geolocation' in navigator) {
-      btn.style.display = 'block';
-      // Immediately get user location (passive -- no driving mode, just show blue dot)
+      // Only show start button if not navigating (dynamic route has its own GO button)
+      if (!DR.cameras.isNavigating()) {
+        btn.style.display = 'block';
+      }
       DR.gps.locatePassive();
     } else {
       btn.style.display = 'none';
     }
   }
 
-  // === Global onclick handlers for HTML ===
+  // ---------- Loading overlay helpers ----------
+
+  function showLoading(text) {
+    var el = document.getElementById('loadingOverlay');
+    var txt = document.getElementById('loadingText');
+    if (el && txt) {
+      txt.textContent = text;
+      el.style.display = 'block';
+    }
+  }
+
+  function hideLoading() {
+    var el = document.getElementById('loadingOverlay');
+    if (el) el.style.display = 'none';
+  }
+
+  // ========== Global onclick handlers ==========
 
   // Existing
   window.flipDir = function () { DR.mapModule.flipDir(); };
@@ -53,9 +66,8 @@
   window.fetchWaze = function () { DR.waze.fetch(DR.mapModule.getWazeLayer()); };
   window.removeCustom = function (lat, lon) { DR.mapModule.removeCustom(lat, lon); };
 
-  // Phase 1B: Driving
+  // Driving
   window.startDrive = function () {
-    // GPS module handles all UI transitions including HUD switch on first fix
     DR.gps.startTracking();
   };
 
@@ -67,9 +79,8 @@
     DR.gps.toggleAutoCenter();
   };
 
-  // Phase 1D: HUD
+  // HUD
   window.hudTap = function (e) {
-    // Don't toggle if tapping buttons
     if (e.target.tagName === 'BUTTON') return;
     DR.hud.toggle();
   };
@@ -84,14 +95,102 @@
     DR.gps.stopTracking();
   };
 
-  // Boot on DOM ready
+  // ========== Navigation pipeline ==========
+
+  /** User selected a search result */
+  window.searchSelect = function (idx) {
+    var dest = DR.search.select(idx);
+    if (!dest) return;
+
+    // Get user's current location
+    var gpsState = DR.gps.getState();
+    var startLat = gpsState.lat;
+    var startLon = gpsState.lon;
+
+    if (startLat === null || startLon === null) {
+      // No GPS fix -- use a sensible default (Dubai)
+      startLat = 25.2048;
+      startLon = 55.2708;
+    }
+
+    // Clear previous dynamic route
+    DR.cameras.clearDynamicRoute();
+    DR.mapModule.clearDynamicRoute();
+    DR.mapModule.hideRouteInfo();
+
+    showLoading('ROUTING...');
+
+    // Hide START DRIVE button (route info will have GO)
+    var startBtn = document.getElementById('startDriveBtn');
+    if (startBtn) startBtn.style.display = 'none';
+
+    DR.routing.calculate(startLat, startLon, dest.lat, dest.lon, function (result) {
+      if (!result) {
+        hideLoading();
+        showLoading('ROUTE NOT FOUND');
+        setTimeout(hideLoading, 2500);
+        if (startBtn) startBtn.style.display = 'block';
+        return;
+      }
+
+      // Set dynamic route
+      DR.cameras.setDynamicRoute(result.routePoints, result.distanceKm, result.durationMin, dest.name);
+
+      // Draw route on map
+      DR.mapModule.drawDynamicRoute(result.routePoints);
+
+      // Update map with new route data (no cameras yet)
+      DR.mapModule.drawMap();
+
+      // Refresh Waze for new route area
+      DR.waze.fetch(DR.mapModule.getWazeLayer());
+
+      showLoading('SCANNING FOR CAMERAS...');
+
+      // Fetch cameras via Overpass API
+      DR.cameras.fetchCamerasForRoute(result.routePoints, function (cams) {
+        // Redraw map with cameras
+        DR.mapModule.drawMap();
+
+        // Show route info bar
+        DR.mapModule.showRouteInfo(result.distanceKm, result.durationMin, cams.length);
+
+        hideLoading();
+      });
+    });
+  };
+
+  /** Clear search and revert to default view */
+  window.clearSearch = function () {
+    DR.search.clear();
+    DR.routing.cancel();
+    DR.cameras.clearDynamicRoute();
+    DR.mapModule.clearDynamicRoute();
+    DR.mapModule.hideRouteInfo();
+    DR.mapModule.drawMap();
+    hideLoading();
+
+    // Show START DRIVE button again
+    var startBtn = document.getElementById('startDriveBtn');
+    if (startBtn && 'geolocation' in navigator) {
+      startBtn.style.display = 'block';
+    }
+  };
+
+  /** Start navigation (GO button on dynamic route) */
+  window.startNavigation = function () {
+    // Start GPS tracking (same as startDrive)
+    DR.gps.startTracking();
+  };
+
+  // Boot
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
 
-  // Register service worker
+  // Service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function (e) {
       console.warn('SW registration failed:', e);
@@ -99,4 +198,5 @@
   }
 
   DR.init = init;
+  DR.checkGPSAvailability = checkGPSAvailability;
 })();

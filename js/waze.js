@@ -23,21 +23,22 @@
     var seen = {};
     var pending = chunks.length;
     var done = 0;
+    var useProxy = false; // Try direct first, fallback to proxy if needed
 
     chunks.forEach(function (chunk) {
       var bMin = chunk[0], bMax = chunk[1], lMin = chunk[2], lMax = chunk[3];
-      var url = 'https://www.waze.com/live-map/api/georss?top=' + bMax +
-        '&bottom=' + bMin + '&left=' + lMin + '&right=' + lMax +
-        '&env=row&types=alerts';
-      fetch(url, { headers: { 'referer': 'https://www.waze.com/live-map/' } })
-        .then(function (r) { return r.ok ? r.json() : { alerts: [] }; })
-        .then(function (d) {
-          (d.alerts || []).forEach(function (a) {
+      fetchWazeChunk(chunk, useProxy)
+        .then(function (alerts) {
+          alerts.forEach(function (a) {
             var u = a.uuid || '';
             if (!seen[u]) { seen[u] = true; wazeAlerts.push(a); }
           });
         })
-        .catch(function () { })
+        .catch(function (err) {
+          console.warn('Waze fetch error:', err);
+          // Try proxy on next request if direct fails
+          useProxy = true;
+        })
         .finally(function () {
           done++;
           if (done >= pending) {
@@ -46,6 +47,45 @@
           }
         });
     });
+  }
+
+  function fetchWazeChunk(chunk, useProxy) {
+    var bMin = chunk[0], bMax = chunk[1], lMin = chunk[2], lMax = chunk[3];
+    
+    var url;
+    var options = {};
+
+    if (useProxy) {
+      // Use Cloudflare Worker proxy (when available)
+      url = '/api/waze?top=' + bMax + '&bottom=' + bMin + 
+            '&left=' + lMin + '&right=' + lMax + '&env=row&types=alerts';
+    } else {
+      // Direct Waze API call
+      url = 'https://www.waze.com/live-map/api/georss?top=' + bMax +
+            '&bottom=' + bMin + '&left=' + lMin + '&right=' + lMax +
+            '&env=row&types=alerts';
+      options.headers = { 'referer': 'https://www.waze.com/live-map/' };
+    }
+
+    return fetch(url, options)
+      .then(function (r) { 
+        if (!r.ok) {
+          throw new Error('HTTP ' + r.status);
+        }
+        return r.json(); 
+      })
+      .then(function (d) {
+        return d.alerts || [];
+      })
+      .catch(function (err) {
+        if (!useProxy) {
+          // Fallback to proxy
+          return fetchWazeChunk(chunk, true);
+        } else {
+          console.warn('Both direct and proxy Waze requests failed:', err);
+          return [];
+        }
+      });
   }
 
   /** Draw Waze alerts on the map layer */

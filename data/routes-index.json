@@ -1,0 +1,86 @@
+[
+  {
+    "id": "dubai-dibba",
+    "name": "Dubai to Dibba Al Hisn",
+    "description": "Dubai to Dibba Al Hisn",
+    "distance_km": 115.84,
+    "duration_min": 85,
+    "camera_count": 28,
+    "start_name": "ENOC Al Awir",
+    "end_name": "Wave Cafe Dibba",
+    "data_file": "data/dubai-dibba.js",
+    "featured": true
+  },
+  {
+    "id": "e311-mbz",
+    "name": "E311 Sheikh Mohammed bin Zayed Road (Abu Dhabi to RAK)",
+    "description": "E311 Sheikh Mohammed bin Zayed Road",
+    "distance_km": 251.56,
+    "duration_min": 166,
+    "camera_count": 188,
+    "start_name": "Al Falah City Abu Dhabi",
+    "end_name": "RAK City Center",
+    "data_file": "data/e311-mbz.js",
+    "featured": false
+  },
+  {
+    "id": "e66-alain",
+    "name": "E66 Al Ain Road (Dubai to Al Ain)",
+    "description": "E66 Al Ain Road",
+    "distance_km": 117.47,
+    "duration_min": 83,
+    "camera_count": 82,
+    "start_name": "Dubai Academic City",
+    "end_name": "Al Ain Oasis",
+    "data_file": "data/e66-alain.js",
+    "featured": false
+  },
+  {
+    "id": "e611-emirates",
+    "name": "E611 Emirates Road (Dubai bypass)",
+    "description": "E611 Emirates Road",
+    "distance_km": 68.97,
+    "duration_min": 53,
+    "camera_count": 47,
+    "start_name": "Sharjah International Airport",
+    "end_name": "Jebel Ali Port",
+    "data_file": "data/e611-emirates.js",
+    "featured": false
+  },
+  {
+    "id": "e44-hatta",
+    "name": "E44 Dubai-Hatta Road",
+    "description": "E44 Dubai-Hatta Road",
+    "distance_km": 102.01,
+    "duration_min": 80,
+    "camera_count": 39,
+    "start_name": "Dubai Festival City",
+    "end_name": "Hatta Border",
+    "data_file": "data/e44-hatta.js",
+    "featured": false
+  },
+  {
+    "id": "e66-kalba",
+    "name": "E66 Sharjah-Kalba Road",
+    "description": "E66 Sharjah-Kalba Road",
+    "distance_km": 108.04,
+    "duration_min": 78,
+    "camera_count": 27,
+    "start_name": "Sharjah University City",
+    "end_name": "Kalba Corniche",
+    "data_file": "data/e66-kalba.js",
+    "featured": false
+  },
+  {
+    "id": "e11-coastal",
+    "name": "E11 Sheikh Zayed Road (Abu Dhabi to Fujairah coastal)",
+    "description": "E11 Sheikh Zayed Road",
+    "distance_km": 270.88,
+    "duration_min": 170,
+    "camera_count": 0,
+    "start_name": "Abu Dhabi Marina Mall",
+    "end_name": "Fujairah City Center",
+    "data_file": "data/e11-coastal.js",
+    "featured": false
+  }
+]

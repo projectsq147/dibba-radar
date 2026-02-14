@@ -1,6 +1,6 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v1';
+var CACHE_NAME = 'dibba-radar-v2';
 
 var APP_FILES = [
   './',
@@ -9,11 +9,25 @@ var APP_FILES = [
   './css/app.css',
   './js/utils.js',
   './js/storage.js',
+  './js/settings.js',
+  './js/theme.js',
+  './js/audio.js',
   './js/cameras.js',
   './js/pins.js',
   './js/waze.js',
   './js/map.js',
+  './js/search.js',
+  './js/routing.js',
+  './js/gps.js',
+  './js/alerts.js',
+  './js/hud.js',
+  './js/speed-trend.js',
+  './js/avg-speed-zones.js',
+  './js/history.js',
+  './js/share.js',
+  './js/route-picker.js',
   './js/app.js',
+  './data/routes-index.json',
   './data/dubai-dibba.json',
   './data/dubai-dibba.js'
 ];

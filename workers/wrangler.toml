@@ -1,0 +1,52 @@
+# Cloudflare Workers configuration for Dibba Radar
+
+# Waze proxy worker
+[[env.production.services]]
+name = "waze-proxy"
+script = "waze-proxy.js"
+compatibility_date = "2024-02-14"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+
+# Community pins API worker
+[[env.production.services]]
+name = "pins-api"
+script = "pins-api.js"
+compatibility_date = "2024-02-14"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+
+# D1 database binding for pins API
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "dibba-radar-pins"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# Development environment
+[env.development]
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+compatibility_date = "2024-02-14"
+
+[[env.development.d1_databases]]
+binding = "DB"
+database_name = "dibba-radar-pins-dev"
+database_id = "YOUR_DEV_D1_DATABASE_ID"
+
+# Routes for production deployment
+[[env.production.routes]]
+pattern = "api.dibba-radar.app/waze/*"
+service = "waze-proxy"
+
+[[env.production.routes]]
+pattern = "api.dibba-radar.app/pins/*"
+service = "pins-api"
+
+# Development routes (using workers.dev subdomain)
+[[env.development.routes]]
+pattern = "dibba-radar-waze.YOUR_SUBDOMAIN.workers.dev/*"
+service = "waze-proxy"
+
+[[env.development.routes]]
+pattern = "dibba-radar-pins.YOUR_SUBDOMAIN.workers.dev/*"
+service = "pins-api"

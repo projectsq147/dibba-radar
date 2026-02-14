@@ -1,11 +1,12 @@
-/* js/map.js -- Leaflet map setup, layer rendering, gap drawing, camera markers */
+/* js/map.js -- Leaflet map, layers, gap drawing, camera markers, dynamic route */
 (function () {
   'use strict';
   var DR = window.DibbaRadar = window.DibbaRadar || {};
 
   var map, routeLayerAB, routeLayerBA;
   var gapLayer, camLayer, labelLayer, wazeLayer;
-  var direction = 'ab'; // ab = Dubai->Dibba, ba = Dibba->Dubai
+  var dynamicRouteLayer = null;
+  var direction = 'ab';
   var adding = false;
   var pendingLatLng = null;
   var _tmpMarker = null;
@@ -27,7 +28,7 @@
     labelLayer = L.layerGroup().addTo(map);
     wazeLayer = L.layerGroup().addTo(map);
 
-    // Map click handler for adding custom pins
+    // Map click for custom pins
     map.on('click', function (e) {
       if (!adding) return;
       pendingLatLng = e.latlng;
@@ -50,7 +51,7 @@
   function getWazeLayer() { return wazeLayer; }
   function getDirection() { return direction; }
 
-  /** Draw route polylines once data is loaded */
+  /** Draw pre-baked route polylines */
   function drawRoutes(rd) {
     routeLayerAB = L.polyline(rd.route_ab, {
       color: '#0a2a1a', weight: 4, opacity: 0.5
@@ -58,18 +59,40 @@
     routeLayerBA = L.polyline(rd.route_ba, {
       color: '#0a2a1a', weight: 3, opacity: 0.25
     }).addTo(map);
-    // Fit bounds to route
     map.fitBounds(rd.route_ab.map(function (p) { return [p[0], p[1]]; }), {
       padding: [80, 20]
     });
   }
 
-  /** Main draw function: gaps, cameras, density bar, etc. */
+  /** Draw a dynamic OSRM route on the map */
+  function drawDynamicRoute(routePoints) {
+    if (dynamicRouteLayer) {
+      map.removeLayer(dynamicRouteLayer);
+    }
+    dynamicRouteLayer = L.polyline(routePoints, {
+      color: '#00ff88',
+      weight: 5,
+      opacity: 0.85
+    }).addTo(map);
+
+    map.fitBounds(dynamicRouteLayer.getBounds(), { padding: [100, 40] });
+  }
+
+  /** Clear dynamic route layer */
+  function clearDynamicRoute() {
+    if (dynamicRouteLayer) {
+      map.removeLayer(dynamicRouteLayer);
+      dynamicRouteLayer = null;
+    }
+  }
+
+  /** Main draw: gaps, cameras, density bar, panel stats, markers */
   function drawMap() {
     var rd = DR.cameras.getRouteData();
     if (!rd) return;
     var TK = rd.distance_km;
     var R = rd.route_ab;
+    var nav = DR.cameras.isNavigating();
 
     gapLayer.clearLayers();
     camLayer.clearLayers();
@@ -78,14 +101,26 @@
     var all = DR.cameras.getAllCams();
     document.getElementById('camCount').textContent = all.length;
 
-    // Highlight active route direction
+    // Update route km / minutes
+    var rkEl = document.getElementById('routeKmVal');
+    if (rkEl) rkEl.textContent = TK.toFixed(1);
+    var rmEl = document.getElementById('routeMinVal');
+    if (rmEl) rmEl.textContent = Math.round(rd.duration_min);
+
+    // Style pre-baked route layers
     if (routeLayerAB && routeLayerBA) {
-      if (direction === 'ab') {
-        routeLayerAB.setStyle({ opacity: 0.5, weight: 4 });
-        routeLayerBA.setStyle({ opacity: 0.15, weight: 2 });
+      if (nav) {
+        // Dim pre-baked routes
+        routeLayerAB.setStyle({ opacity: 0.08, weight: 2, color: '#0a2a1a' });
+        routeLayerBA.setStyle({ opacity: 0.04, weight: 1, color: '#0a2a1a' });
       } else {
-        routeLayerBA.setStyle({ opacity: 0.5, weight: 4 });
-        routeLayerAB.setStyle({ opacity: 0.15, weight: 2 });
+        if (direction === 'ab') {
+          routeLayerAB.setStyle({ opacity: 0.5, weight: 4, color: '#0a2a1a' });
+          routeLayerBA.setStyle({ opacity: 0.15, weight: 2, color: '#0a2a1a' });
+        } else {
+          routeLayerBA.setStyle({ opacity: 0.5, weight: 4, color: '#0a2a1a' });
+          routeLayerAB.setStyle({ opacity: 0.15, weight: 2, color: '#0a2a1a' });
+        }
       }
     }
 
@@ -116,7 +151,6 @@
       }).addTo(gapLayer);
       line.bindPopup('<div class="pt"><span class="pg">' + g.toFixed(1) + ' km</span> gap</div>');
 
-      // Gap labels for >3km
       if (g >= 3) {
         var mi = Math.floor((si + ei) / 2), mp = R[mi];
         if (mp) {
@@ -140,7 +174,7 @@
 
     document.getElementById('maxGap').textContent = maxG.toFixed(1);
 
-    // Draw camera markers
+    // Camera markers
     all.forEach(function (cam, i) {
       var isC = cam.source === 'custom';
       var col = isC ? '#00e5ff' :
@@ -148,16 +182,17 @@
           cam.speed === '100' ? '#ffc107' : '#ff3b3b';
 
       // Pulse ring
-      var pi = L.divIcon({
-        className: '',
-        html: '<div style="width:22px;height:22px;border-radius:50%;background:' + col +
-          ';opacity:0.12;animation:pulse 2.5s ease-in-out infinite;animation-delay:' +
-          (i * 0.15 % 2.5) + 's;"></div>',
-        iconAnchor: [11, 11]
-      });
-      L.marker([cam.lat, cam.lon], { icon: pi, interactive: false }).addTo(camLayer);
+      L.marker([cam.lat, cam.lon], {
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="width:22px;height:22px;border-radius:50%;background:' + col +
+            ';opacity:0.12;animation:pulse 2.5s ease-in-out infinite;animation-delay:' +
+            (i * 0.15 % 2.5) + 's;"></div>',
+          iconAnchor: [11, 11]
+        }),
+        interactive: false
+      }).addTo(camLayer);
 
-      // Circle marker
       var mk = L.circleMarker([cam.lat, cam.lon], {
         radius: isC ? 8 : 6,
         fillColor: col, fillOpacity: 0.95,
@@ -189,7 +224,7 @@
       );
     });
 
-    // Off-route cameras
+    // Off-route cameras (pre-baked only)
     var offRoute = DR.cameras.getOffRouteCams();
     offRoute.forEach(function (c) {
       L.circleMarker([c.lat, c.lon], {
@@ -198,9 +233,20 @@
       }).addTo(camLayer);
     });
 
-    // Start/end markers
-    [[25.2086, 55.5549, 'ENOC AL AWIR', 'START'],
-    [25.6211, 56.2821, 'WAVE CAFE DIBBA', 'END']].forEach(function (p) {
+    // Start / end markers
+    var markers;
+    if (nav) {
+      markers = [
+        [rd.start.lat, rd.start.lon, rd.start.name.toUpperCase(), 'START'],
+        [rd.end.lat, rd.end.lon, rd.end.name.toUpperCase(), 'END']
+      ];
+    } else {
+      markers = [
+        [25.2086, 55.5549, 'ENOC AL AWIR', 'START'],
+        [25.6211, 56.2821, 'WAVE CAFE DIBBA', 'END']
+      ];
+    }
+    markers.forEach(function (p) {
       L.marker([p[0], p[1]], {
         icon: L.divIcon({
           className: '',
@@ -227,6 +273,9 @@
       cc.textContent = '';
       eb.style.display = 'none';
     }
+
+    // Update panel text
+    updatePanel();
   }
 
   function drawDensityBar(all, TK) {
@@ -244,7 +293,48 @@
     });
   }
 
-  /** Toggle direction */
+  /** Update panel title / subtitle / header based on nav state */
+  function updatePanel() {
+    var nav = DR.cameras.isNavigating();
+    var pt = document.getElementById('panelTitle');
+    var ps = document.getElementById('panelSub');
+    var dt = document.getElementById('dirToggle');
+    var rt = document.getElementById('routeTag');
+
+    if (nav) {
+      var rd = DR.cameras.getRouteData();
+      if (pt) pt.textContent = rd.end.name.toUpperCase();
+      if (ps) ps.textContent = rd.distance_km.toFixed(1) + ' km via OSRM \u2022 ' +
+        DR.cameras.getAllCams().length + ' cameras';
+      if (dt) dt.style.display = 'none';
+      if (rt) rt.textContent = 'radar // nav';
+    } else {
+      if (pt) pt.innerHTML = 'DUBAI &mdash; DIBBA AL HISN';
+      if (ps) ps.textContent = 'ENOC Al Awir to Wave Cafe \u2022 Fixed + live alerts';
+      if (dt) dt.style.display = '';
+      if (rt) rt.textContent = 'radar // live';
+    }
+  }
+
+  /** Show route info bar */
+  function showRouteInfo(distKm, durationMin, camCount) {
+    var ri = document.getElementById('routeInfo');
+    if (!ri) return;
+    var d = document.getElementById('riDist');
+    var t = document.getElementById('riTime');
+    var c = document.getElementById('riCams');
+    if (d) d.textContent = distKm.toFixed(1);
+    if (t) t.textContent = Math.round(durationMin);
+    if (c) c.textContent = camCount;
+    ri.style.display = 'flex';
+  }
+
+  /** Hide route info bar */
+  function hideRouteInfo() {
+    var ri = document.getElementById('routeInfo');
+    if (ri) ri.style.display = 'none';
+  }
+
   function flipDir() {
     direction = direction === 'ab' ? 'ba' : 'ab';
     document.getElementById('dirLabel').textContent =
@@ -254,7 +344,6 @@
     drawMap();
   }
 
-  /** Toggle add-camera mode */
   function toggleAdd() {
     adding = !adding;
     var btn = document.getElementById('addBtn');
@@ -272,7 +361,6 @@
     }
   }
 
-  /** Confirm add with speed limit */
   function confirmAdd(speed) {
     if (!pendingLatLng) return;
     DR.pins.addPin(pendingLatLng.lat, pendingLatLng.lng, speed);
@@ -287,7 +375,6 @@
     drawMap();
   }
 
-  /** Cancel add */
   function cancelAdd() {
     pendingLatLng = null;
     document.getElementById('speedPicker').classList.remove('show');
@@ -298,14 +385,12 @@
     if (_tmpMarker) { map.removeLayer(_tmpMarker); _tmpMarker = null; }
   }
 
-  /** Remove a custom pin by lat/lon */
   function removeCustom(lat, lon) {
     DR.pins.removePin(lat, lon);
     map.closePopup();
     drawMap();
   }
 
-  /** Export pins */
   function exportPins() {
     DR.pins.exportPins();
   }
@@ -316,7 +401,12 @@
     getWazeLayer: getWazeLayer,
     getDirection: getDirection,
     drawRoutes: drawRoutes,
+    drawDynamicRoute: drawDynamicRoute,
+    clearDynamicRoute: clearDynamicRoute,
     drawMap: drawMap,
+    updatePanel: updatePanel,
+    showRouteInfo: showRouteInfo,
+    hideRouteInfo: hideRouteInfo,
     flipDir: flipDir,
     toggleAdd: toggleAdd,
     confirmAdd: confirmAdd,

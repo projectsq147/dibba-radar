@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dibba Radar - Load Test</title>
+<script>
+window.addEventListener('load', function() {
+  console.log('Page loaded');
+  console.log('DibbaRadar modules:', Object.keys(window.DibbaRadar || {}));
+});
+
+window.addEventListener('error', function(e) {
+  console.error('JavaScript error:', e.error.message, 'at', e.filename, 'line', e.lineno);
+});
+</script>
+</head>
+<body>
+<h1>Dibba Radar Load Test</h1>
+<div id="status">Loading...</div>
+
+<!-- Load all JS files in order -->
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/cameras.js"></script>
+<script src="js/pins.js"></script>
+<script src="js/waze.js"></script>
+<script src="js/search.js"></script>
+<script src="js/routing.js"></script>
+<script src="js/speed-trend.js"></script>
+<script src="js/avg-speed-zones.js"></script>
+<script src="js/history.js"></script>
+<script src="js/share.js"></script>
+<script src="js/route-picker.js"></script>
+
+<script>
+document.getElementById('status').textContent = 'All modules loaded successfully!';
+console.log('Test complete');
+</script>
+</body>
+</html>

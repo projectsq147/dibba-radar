@@ -20,17 +20,12 @@
   function getNextCamera() { return nextCamera ? nextCamera.cam : null; }
   function getNextCameraDistance() { return nextCamera ? nextCamera.distance : null; }
 
-  /** Initialize audio context (must be called from user gesture) */
+  /** Initialize audio context using new audio system */
   function initAudio() {
-    if (audioCtx) return;
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      // Resume if suspended (Safari requirement)
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-    } catch (e) {
-      console.warn('Web Audio API not available:', e);
+    // Use the new centralized audio system
+    if (DR.audio && DR.audio.init) {
+      // Audio system is already initialized in app.js
+      return;
     }
   }
 

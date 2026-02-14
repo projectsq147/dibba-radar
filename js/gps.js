@@ -232,10 +232,16 @@
     document.body.classList.remove('driving');
     var startBtn = document.getElementById('startDriveBtn');
     if (startBtn) {
-      startBtn.style.display = 'block';
+      // Don't show START DRIVE if a dynamic route is active (has its own GO button)
+      startBtn.style.display = (DR.cameras && DR.cameras.isNavigating()) ? 'none' : 'block';
       startBtn.textContent = 'START DRIVE';
       startBtn.classList.remove('acquiring');
       startBtn.disabled = false;
+    }
+    // Re-show route info if navigating
+    if (DR.cameras && DR.cameras.isNavigating()) {
+      var ri = document.getElementById('routeInfo');
+      if (ri) ri.style.display = 'flex';
     }
     var stopBtn = document.getElementById('stopDriveBtn');
     if (stopBtn) stopBtn.style.display = 'none';
