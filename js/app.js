@@ -15,13 +15,39 @@
     DR.avgSpeedZones.init();
     DR.share.init();
 
-    // Initialize route picker (shows home screen)
-    DR.routePicker.init();
-
     // Initialize search (for custom routes)
     DR.search.init();
 
-    // Map will be initialized when a route is selected
+    // Default mode: radar map (show everything, no route needed)
+    initRadarMode();
+  }
+
+  /** Radar mode: full map with all cameras and colored roads */
+  function initRadarMode() {
+    // Hide route picker if visible
+    var rp = document.getElementById('routePicker');
+    if (rp) rp.style.display = 'none';
+
+    // Show map
+    var mapEl = document.getElementById('map');
+    if (mapEl) mapEl.style.display = 'block';
+
+    // Initialize map module (dark tiles, UAE center)
+    DR.mapModule.init();
+
+    // Load and render all cameras + road segments
+    DR.radarMap.init(function () {
+      // Start passive GPS
+      if ('geolocation' in navigator) {
+        DR.gps.locatePassive();
+      }
+
+      // Show drive button
+      var startBtn = document.getElementById('startDriveBtn');
+      if (startBtn && 'geolocation' in navigator) {
+        startBtn.style.display = 'block';
+      }
+    });
   }
 
   /** Show start button if GPS is available, get passive location */
@@ -69,10 +95,13 @@
   // Driving
   window.startDrive = function () {
     DR.gps.startTracking();
+    // Start proximity alerts for all cameras
+    if (DR.radarMap) DR.radarMap.startNearbyAlerts();
   };
 
   window.stopDrive = function () {
     DR.gps.stopTracking();
+    if (DR.radarMap) DR.radarMap.stopNearbyAlerts();
   };
 
   window.centerOnMe = function () {
@@ -93,6 +122,7 @@
   window.hudStop = function (e) {
     e.stopPropagation();
     DR.gps.stopTracking();
+    if (DR.radarMap) DR.radarMap.stopNearbyAlerts();
   };
 
   // ========== Navigation pipeline ==========

@@ -1,6 +1,6 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v3';
+var CACHE_NAME = 'dibba-radar-v4';
 
 var APP_FILES = [
   './',
@@ -22,7 +22,9 @@ var APP_FILES = [
   './js/alerts.js',
   './js/hud.js',
   './js/speed-limit.js',
+  './js/radar-map.js',
   './js/speed-trend.js',
+  './data/all-cameras.js',
   './js/avg-speed-zones.js',
   './js/history.js',
   './js/share.js',
