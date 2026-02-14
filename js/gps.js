@@ -495,8 +495,8 @@
       // Accuracy circle
       blueDotCircle = L.circle([lat, lon], {
         radius: state.accuracy || 20,
-        color: '#4285f4',
-        fillColor: '#4285f4',
+        color: 'rgba(255,255,255,0.6)',
+        fillColor: 'rgba(255,255,255,0.6)',
         fillOpacity: 0.1,
         weight: 1,
         opacity: 0.3
@@ -673,8 +673,8 @@
 
           blueDotCircle = L.circle([lat, lon], {
             radius: acc || 20,
-            color: '#4285f4',
-            fillColor: '#4285f4',
+            color: 'rgba(255,255,255,0.6)',
+            fillColor: 'rgba(255,255,255,0.6)',
             fillOpacity: 0.1,
             weight: 1,
             opacity: 0.3
