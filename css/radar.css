@@ -90,11 +90,17 @@ html, body {
 .top-btn:hover { color: var(--fg); border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
 .top-btn:active { transform: scale(0.95); }
 
-/* ======== SEARCH ======== */
+/* ======== SEARCH BAR ======== */
+
+.search-bar {
+  position: fixed;
+  top: 52px;
+  left: 16px; right: 16px;
+  z-index: 899;
+  padding-top: env(safe-area-inset-top, 0px);
+}
 
 .search-wrap {
-  flex: 1;
-  position: relative;
   display: flex;
   align-items: center;
   background: var(--card);
@@ -102,8 +108,6 @@ html, body {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 0 12px;
-  height: 38px;
   transition: border-color 0.3s;
 }
 .search-wrap:focus-within {
@@ -112,18 +116,18 @@ html, body {
 .search-icon {
   color: var(--dim);
   flex-shrink: 0;
-  margin-right: 8px;
+  margin-left: 14px;
 }
 .search-input {
   flex: 1;
-  background: none;
+  background: transparent;
   border: none;
   outline: none;
   color: var(--fg);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  padding: 0;
+  padding: 13px 14px;
   min-width: 0;
 }
 .search-input::placeholder {
@@ -131,92 +135,52 @@ html, body {
   font-weight: 400;
 }
 .search-clear {
+  display: none;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 20px;
+  font-size: 22px;
+  padding: 8px 14px;
   cursor: pointer;
-  padding: 0 2px;
   line-height: 1;
   transition: color 0.2s;
 }
-.search-clear:hover { color: var(--fg); }
+.search-clear:active { color: var(--destructive); }
 
-/* Search results dropdown */
-.search-results {
-  display: none;
-  position: fixed;
-  top: 54px;
-  left: 16px; right: 16px;
-  z-index: 905;
-  background: rgba(30, 30, 30, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  max-height: 280px;
-  overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-}
-.search-results .sr-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--muted);
-}
-.search-results .sr-item:last-child { border-bottom: none; }
-.search-results .sr-item:hover,
-.search-results .sr-item:active {
-  background: rgba(255,255,255,0.05);
-  color: var(--fg);
-}
-.search-results .sr-name {
-  font-weight: 600;
-  color: var(--fg);
-}
-.search-results .sr-sub {
-  font-size: 12px;
-  color: var(--dim);
-  margin-top: 2px;
-}
-
-/* Route info bar */
+/* Route info (inside search bar) */
 .route-info {
-  position: fixed;
-  bottom: 80px;
-  left: 16px; right: 16px;
-  z-index: 910;
-  background: var(--card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 14px 18px;
-  display: flex;
+  display: none;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
-.route-info-stats {
+.ri-stats {
   display: flex;
-  gap: 20px;
+  gap: 16px;
+  flex: 1;
 }
 .ri-stat {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 3px;
 }
 .ri-val {
-  font-size: 20px;
+  font-family: var(--font);
+  font-size: 18px;
   font-weight: 700;
   color: var(--fg);
+  line-height: 1;
 }
 .ri-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .ri-go {
   background: var(--primary);
@@ -226,13 +190,62 @@ html, body {
   padding: 10px 28px;
   font-family: var(--font);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
+  flex-shrink: 0;
   box-shadow: 0 4px 16px rgba(255,255,255,0.12);
   transition: all 0.3s ease;
 }
 .ri-go:hover { transform: translateY(-1px) scale(1.02); }
 .ri-go:active { transform: scale(0.95); }
+
+/* Search results dropdown */
+.search-results {
+  display: none;
+  position: fixed;
+  top: 104px;
+  left: 16px; right: 16px;
+  z-index: 905;
+  background: rgba(30, 30, 30, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+.sr-item {
+  padding: 14px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.15s;
+}
+.sr-item:last-child { border-bottom: none; }
+.sr-item:active {
+  background: rgba(255,255,255,0.06);
+}
+.sr-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.sr-detail {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dim);
+  margin-top: 3px;
+}
+.sr-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 13px;
+}
+
+/* Hide search bar during driving/HUD */
+body.driving .search-bar { display: none; }
+body.hud-active .search-bar { display: none !important; }
 
 /* ======== LEGEND ======== */
 

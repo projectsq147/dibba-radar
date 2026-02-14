@@ -38,7 +38,7 @@
 
     // Close results on outside click
     document.addEventListener('click', function (e) {
-      if (!e.target.closest('#searchWrap') && !e.target.closest('#searchResults')) {
+      if (!e.target.closest('#searchBar') && !e.target.closest('#searchResults')) {
         hideResults();
       }
     });
@@ -86,11 +86,11 @@
     var container = document.getElementById('searchResults');
     if (!container) return;
 
-    // Position below search input
-    var bar = document.getElementById('searchWrap');
+    // Position below search bar
+    var bar = document.getElementById('searchBar');
     if (bar) {
       var rect = bar.getBoundingClientRect();
-      container.style.top = (rect.bottom + 6) + 'px';
+      container.style.top = (rect.bottom + 4) + 'px';
     }
 
     if (!data || data.length === 0) {

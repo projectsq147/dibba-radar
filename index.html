@@ -18,13 +18,9 @@
 <!-- Full-screen map -->
 <div id="map"></div>
 
-<!-- Top bar: search + controls -->
+<!-- Top bar: branding + controls -->
 <div id="topBar" class="top-bar">
-    <div class="search-wrap" id="searchWrap">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="searchInput" class="search-input" type="text" placeholder="Where to?" autocomplete="off">
-        <button id="clearSearch" class="search-clear" onclick="clearSearch()" style="display:none">&times;</button>
-    </div>
+    <div class="top-brand">Dibba <span class="top-brand-accent">Radar</span></div>
     <button id="legendBtn" class="top-btn" onclick="toggleLegend()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
     </button>
@@ -33,18 +29,26 @@
     </button>
 </div>
 
+<!-- Search bar (standalone, below top bar) -->
+<div id="searchBar" class="search-bar">
+    <div id="searchWrap" class="search-wrap">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="searchInput" class="search-input" type="text" placeholder="Where to?" autocomplete="off">
+        <button id="clearSearch" class="search-clear" onclick="clearSearch()" style="display:none">&times;</button>
+    </div>
+    <!-- Route info (appears after routing) -->
+    <div id="routeInfo" class="route-info" style="display:none">
+        <div class="ri-stats">
+            <div class="ri-stat"><span class="ri-val" id="riDist">--</span><span class="ri-label">km</span></div>
+            <div class="ri-stat"><span class="ri-val" id="riTime">--</span><span class="ri-label">min</span></div>
+            <div class="ri-stat"><span class="ri-val" id="riCams">--</span><span class="ri-label">cams</span></div>
+        </div>
+        <button class="ri-go" id="goBtn" onclick="startNavigation()">GO</button>
+    </div>
+</div>
+
 <!-- Search results dropdown -->
 <div id="searchResults" class="search-results"></div>
-
-<!-- Route info bar (after routing) -->
-<div id="routeInfo" class="route-info" style="display:none">
-    <div class="route-info-stats">
-        <div class="ri-stat"><span class="ri-val" id="riDist">--</span><span class="ri-label">km</span></div>
-        <div class="ri-stat"><span class="ri-val" id="riTime">--</span><span class="ri-label">min</span></div>
-        <div class="ri-stat"><span class="ri-val" id="riCams">--</span><span class="ri-label">cams</span></div>
-    </div>
-    <button class="ri-go" id="goBtn" onclick="startNavigation()">GO</button>
-</div>
 
 <!-- Legend overlay -->
 <div id="legend" class="legend" style="display:none">
