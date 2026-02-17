@@ -616,23 +616,29 @@
     }
   }
 
-  /** Smooth animation loop for user dot and camera movement */
+  /** Smooth animation loop for user dot and camera movement (native refresh rate) */
   function startAnimation() {
     var lastFrameTime = 0;
     function animate(timestamp) {
       if (!tracking) return;
-      if (timestamp - lastFrameTime < 33) {
-        animFrameId = requestAnimationFrame(animate);
-        return;
-      }
+
+      // Time-based lerp for consistent smoothness at any refresh rate (60/120/144hz)
+      var dt = lastFrameTime ? (timestamp - lastFrameTime) / 1000 : 0.016;
       lastFrameTime = timestamp;
+      // Clamp dt to avoid jumps after tab switch
+      if (dt > 0.1) dt = 0.016;
+
       var map = DR.mapModule.getMap();
       
       if (targetLat !== null && currentLat !== null) {
-        // Lerp toward target (0.3 = snappy, catches up fast)
-        var lerp = 0.3;
-        currentLat += (targetLat - currentLat) * lerp;
-        currentLon += (targetLon - currentLon) * lerp;
+        // Exponential decay lerp: ~12x/sec convergence rate, frame-rate independent
+        var alpha = 1 - Math.exp(-12 * dt);
+        currentLat += (targetLat - currentLat) * alpha;
+        currentLon += (targetLon - currentLon) * alpha;
+
+        // Snap when close enough to avoid sub-pixel jitter
+        if (Math.abs(targetLat - currentLat) < 0.0000001) currentLat = targetLat;
+        if (Math.abs(targetLon - currentLon) < 0.0000001) currentLon = targetLon;
 
         // Update user dot position
         updateUserDot();
@@ -642,15 +648,14 @@
           var bearing = state.heading !== null ? state.heading : 0;
           
           var targetZoom = map.getZoom();
-          // Force minimum zoom 16 when driving (street-level)
           if (tracking && targetZoom < 16) targetZoom = 16;
           
           map.easeTo({
             center: [currentLon, currentLat],
             bearing: bearing,
-            pitch: tracking ? 50 : 0, // 3D perspective when driving
+            pitch: tracking ? 50 : 0,
             zoom: targetZoom,
-            duration: 0 // Instant for smooth 60fps updates
+            duration: 0
           });
         }
       }
