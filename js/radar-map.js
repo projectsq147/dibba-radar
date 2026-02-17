@@ -271,7 +271,7 @@
     var cams = data.cameras;
 
     for (var i = 0; i < cams.length; i++) {
-      var d = quickDist(st.lat, st.lon, cams[i].lat, cams[i].lon);
+      var d = DR.quickDist(st.lat, st.lon, cams[i].lat, cams[i].lon);
       if (d < closestDist) {
         closestDist = d;
         closest = cams[i];
@@ -316,15 +316,38 @@
         }
       }
 
-      // Trigger audio alert
+      // Trigger audio alert with voice (only for cameras ahead, not behind)
       if (closestDist < warningDist && DR.audio) {
         var camKey = closest.lat + ',' + closest.lon;
-        if (lastAlertCam !== camKey) {
+        // Check if camera is ahead using heading
+        var isCamAhead = true;
+        if (st.heading !== null && st.heading !== undefined) {
+          var bearingToCam = Math.atan2(
+            (closest.lon - st.lon) * Math.cos(st.lat * Math.PI / 180),
+            closest.lat - st.lat
+          ) * 180 / Math.PI;
+          bearingToCam = (bearingToCam + 360) % 360;
+          var headingDiff = Math.abs(bearingToCam - st.heading);
+          if (headingDiff > 180) headingDiff = 360 - headingDiff;
+          isCamAhead = headingDiff < 90; // within 90 degrees of travel direction
+        }
+
+        if (isCamAhead && lastAlertCam !== camKey) {
           lastAlertCam = camKey;
+          var voiceMessage = null;
+          
           if (closestDist < criticalDist) {
-            DR.audio.playAlert('critical');
+            voiceMessage = 'Camera, ' + formatDistanceForVoice(closestDist);
+            DR.audio.playAlert('critical', voiceMessage);
           } else {
-            DR.audio.playAlert('warning');
+            // 1km warning with speed limit info if available
+            var limitInfo = '';
+            var camSl = closest.speed_limit;
+            if (camSl && camSl !== '?' && camSl !== 'unknown') {
+              limitInfo = ', limit ' + camSl;
+            }
+            voiceMessage = 'Camera ahead, ' + formatDistanceForVoice(closestDist) + limitInfo;
+            DR.audio.playAlert('warning', voiceMessage);
           }
         }
       }
@@ -340,6 +363,10 @@
         if (isOver && !wasOverMargin) {
           wasOverMargin = true;
           showFlash('red', limitNum, Math.round(speed));
+          // Voice alert for over speed limit (only if very close to camera)
+          if (closestDist < 0.2 && DR.audio) {
+            DR.audio.speak('Slow down');
+          }
         } else if (isOver && wasOverMargin) {
           keepFlashRed();
         } else if (!isOver && wasOverMargin) {
@@ -363,24 +390,24 @@
     var red = document.getElementById('flashRed');
     var green = document.getElementById('flashGreen');
     if (color === 'red') {
-      if (green) green.style.display = 'none';
+      if (green) green.classList.remove('active');
       if (red) {
-        red.style.display = 'flex';
+        red.classList.add('active');
         var sub = document.getElementById('flashRedSub');
         if (sub && limit) sub.textContent = Math.round(speed) + ' / ' + (limit + 20) + ' km/h';
       }
       // Auto-hide after 3s if speed drops (keepFlashRed refreshes it)
       clearTimeout(flashRedTimer);
       flashRedTimer = setTimeout(function () {
-        if (red) red.style.display = 'none';
+        if (red) red.classList.remove('active');
       }, 3000);
     } else {
-      if (red) red.style.display = 'none';
+      if (red) red.classList.remove('active');
       clearTimeout(flashRedTimer);
-      if (green) green.style.display = 'flex';
+      if (green) green.classList.add('active');
       clearTimeout(flashGreenTimer);
       flashGreenTimer = setTimeout(function () {
-        if (green) green.style.display = 'none';
+        if (green) green.classList.remove('active');
       }, 1500);
     }
   }
@@ -388,10 +415,10 @@
   /** Keep red flash alive while still over */
   function keepFlashRed() {
     var red = document.getElementById('flashRed');
-    if (red && red.style.display !== 'flex') red.style.display = 'flex';
+    if (red && !red.classList.contains('active')) red.classList.add('active');
     clearTimeout(flashRedTimer);
     flashRedTimer = setTimeout(function () {
-      if (red) red.style.display = 'none';
+      if (red) red.classList.remove('active');
     }, 1500);
   }
 
@@ -399,19 +426,23 @@
   function hideFlashes() {
     var red = document.getElementById('flashRed');
     var green = document.getElementById('flashGreen');
-    if (red) red.style.display = 'none';
-    if (green) green.style.display = 'none';
+    if (red) red.classList.remove('active');
+    if (green) green.classList.remove('active');
     clearTimeout(flashRedTimer);
     clearTimeout(flashGreenTimer);
   }
 
-  /** Quick distance in km (equirectangular approximation) */
-  function quickDist(lat1, lon1, lat2, lon2) {
-    var R = 6371;
-    var dLat = (lat2 - lat1) * Math.PI / 180;
-    var dLon = (lon2 - lon1) * Math.PI / 180;
-    var cosLat = Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
-    return R * Math.sqrt(dLat * dLat + dLon * dLon * cosLat * cosLat);
+  /** Format distance for natural voice announcements */
+  function formatDistanceForVoice(distKm) {
+    if (distKm >= 1) {
+      var roundedKm = Math.round(distKm * 10) / 10;
+      if (roundedKm <= 1.1) return 'one kilometer';
+      return roundedKm.toFixed(0) + ' kilometers';
+    }
+    // Round to nearest 100m for cleaner speech
+    var meters = Math.round(distKm * 10) * 100;
+    if (meters <= 100) return '100 meters';
+    return meters + ' meters';
   }
 
   /** Clear all markers and lines */

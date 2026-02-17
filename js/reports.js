@@ -163,7 +163,7 @@
     var nearby = [];
     for (var i = 0; i < reports.length; i++) {
       var r = reports[i];
-      var d = quickDist(lat, lon, r.lat, r.lon);
+      var d = DR.quickDist(lat, lon, r.lat, r.lon);
       if (d <= radiusKm) {
         nearby.push({ report: r, dist: d });
       }
@@ -183,7 +183,14 @@
       alertedReports[r.id] = true;
       var rt = REPORT_TYPES[r.type] || REPORT_TYPES.hazard;
       var distM = Math.round(item.dist * 1000);
-      showReportAlert(rt.label + ' reported ' + distM + 'm ahead');
+      var alertText = rt.label + ' reported ' + distM + 'm ahead';
+      showReportAlert(alertText);
+      
+      // Voice alert for community reports
+      if (DR.audio && DR.audio.speak) {
+        var voiceText = rt.label + ' ahead';
+        DR.audio.speak(voiceText);
+      }
     }
   }
 
@@ -208,14 +215,7 @@
     alertedReports = {};
   }
 
-  /** Quick distance in km (equirectangular approximation) */
-  function quickDist(lat1, lon1, lat2, lon2) {
-    var R = 6371;
-    var dLat = (lat2 - lat1) * Math.PI / 180;
-    var dLon = (lon2 - lon1) * Math.PI / 180;
-    var cosLat = Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
-    return R * Math.sqrt(dLat * dLat + dLon * dLon * cosLat * cosLat);
-  }
+  /* quickDist moved to utils.js */
 
   DR.reports = {
     init: init,

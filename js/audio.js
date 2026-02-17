@@ -5,7 +5,9 @@
 
   var audioContext = null;
   var isEnabled = true;
+  var voiceEnabled = true;
   var masterVolume = 0.8; // 0.0 - 1.0
+  var currentUtterance = null;
 
   function init() {
     // Initialize Web Audio Context on first user interaction
@@ -16,6 +18,8 @@
     document.addEventListener('settingsChange', function(e) {
       if (e.detail.type === 'audio') {
         isEnabled = e.detail.value;
+      } else if (e.detail.type === 'voice') {
+        voiceEnabled = e.detail.value;
       }
     });
   }
@@ -55,6 +59,69 @@
     }
     
     return audioContext;
+  }
+
+  var cachedVoice = null;
+
+  /** Find best English voice (cache result) */
+  function getEnglishVoice() {
+    if (cachedVoice) return cachedVoice;
+    var voices = speechSynthesis.getVoices();
+    if (!voices.length) return null;
+    // Prefer US/UK English
+    var preferred = ['en-US', 'en-GB', 'en-AU'];
+    for (var p = 0; p < preferred.length; p++) {
+      for (var v = 0; v < voices.length; v++) {
+        if (voices[v].lang === preferred[p]) {
+          cachedVoice = voices[v];
+          return cachedVoice;
+        }
+      }
+    }
+    // Fallback: any English voice
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang.indexOf('en') === 0) {
+        cachedVoice = voices[i];
+        return cachedVoice;
+      }
+    }
+    return null;
+  }
+
+  // Pre-cache voice when available (Chrome loads them async)
+  if ('speechSynthesis' in window) {
+    speechSynthesis.addEventListener('voiceschanged', function () {
+      cachedVoice = null;
+      getEnglishVoice();
+    });
+  }
+
+  /** Speak text using Web Speech API */
+  function speak(text) {
+    if (!voiceEnabled || !isEnabled) return;
+    if (!('speechSynthesis' in window)) return;
+
+    // Cancel any existing speech to avoid queue buildup
+    speechSynthesis.cancel();
+
+    var utterance = new SpeechSynthesisUtterance(text);
+    currentUtterance = utterance;
+    
+    utterance.rate = 1.1;
+    utterance.pitch = 1.0;
+    utterance.volume = Math.min(masterVolume + 0.1, 1.0); // Slightly louder than beeps
+    
+    var voice = getEnglishVoice();
+    if (voice) utterance.voice = voice;
+    
+    utterance.onend = function() {
+      if (currentUtterance === utterance) currentUtterance = null;
+    };
+    utterance.onerror = function() {
+      if (currentUtterance === utterance) currentUtterance = null;
+    };
+    
+    speechSynthesis.speak(utterance);
   }
 
   /** Play 1000m warning: short double-beep, medium pitch */
@@ -178,7 +245,7 @@
   }
 
   /** Play alert by type: 'warning' or 'critical' */
-  function playAlert(type) {
+  function playAlert(type, voiceMessage) {
     if (!isEnabled) return;
     var ctx = ensureAudioContext();
     if (!ctx) return;
@@ -200,6 +267,11 @@
         { freq: 800, duration: 0.2, delay: 0 },
         { freq: 800, duration: 0.2, delay: 0.3 }
       ], 0.6);
+    }
+
+    // Play voice alert if provided
+    if (voiceMessage) {
+      speak(voiceMessage);
     }
   }
 
@@ -236,6 +308,14 @@
     isEnabled = enabled;
   }
 
+  function setVoiceEnabled(enabled) {
+    voiceEnabled = enabled;
+  }
+
+  function isVoiceEnabled() {
+    return voiceEnabled && ('speechSynthesis' in window);
+  }
+
   // Public API
   DR.audio = {
     init: init,
@@ -249,6 +329,9 @@
     testAudio: testAudio,
     isEnabled: isAudioEnabled,
     setEnabled: setEnabled,
-    setVolume: setVolume
+    setVolume: setVolume,
+    speak: speak,
+    setVoiceEnabled: setVoiceEnabled,
+    isVoiceEnabled: isVoiceEnabled
   };
 })();

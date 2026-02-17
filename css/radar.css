@@ -488,7 +488,7 @@ body.driving .center-btn { display: flex; }
 
 /* Speed flash overlays (UAE +20 km/h margin) */
 .flash-overlay {
-  display: none;
+  display: flex;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   z-index: 5000;
@@ -497,15 +497,27 @@ body.driving .center-btn { display: flex; }
   flex-direction: column;
   gap: 8px;
   pointer-events: none;
+  transition: opacity 0.2s ease;
+  opacity: 0;
+}
+.flash-overlay.active {
+  opacity: 1;
 }
 .flash-red {
-  background: rgba(239, 68, 68, 0.18);
-  animation: flashPulse 0.5s ease infinite;
-  border: 4px solid rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: flashPulse 0.6s ease infinite;
+  border: none;
+  /* Remove the hard border, use inner glow instead */
+  box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.3);
 }
 .flash-green {
-  background: rgba(34, 197, 94, 0.15);
-  border: 4px solid rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.12);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border: none;
+  box-shadow: inset 0 0 80px rgba(34, 197, 94, 0.2);
 }
 .flash-text {
   font-family: var(--font);
@@ -1308,4 +1320,177 @@ body.hud-active #tripHistoryBtn { display: none !important; }
     bottom: 100px;
     left: calc(env(safe-area-inset-left, 0px) + 16px);
   }
+}
+
+/* ======== LIGHT THEME ======== */
+body.light-theme {
+  --bg: #f0f0f0;
+  --fg: #1a1a1a;
+  --card: rgba(255, 255, 255, 0.88);
+  --card-solid: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --muted: #555555;
+  --dim: rgba(0, 0, 0, 0.5);
+  --primary: #1a1a1a;
+  --primary-fg: #ffffff;
+  --destructive: #dc2626;
+}
+
+body.light-theme .top-bar {
+  background: linear-gradient(180deg, rgba(240,240,240,0.95) 0%, rgba(240,240,240,0.6) 70%, transparent 100%);
+}
+
+body.light-theme .top-btn {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: var(--muted);
+}
+
+body.light-theme .search-wrap {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .search-results {
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+body.light-theme .sr-item:active { background: rgba(0, 0, 0, 0.04); }
+
+body.light-theme .legend {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .settings-panel {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.1);
+}
+body.light-theme .pill {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+body.light-theme .pill.active {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .slider {
+  background: rgba(0, 0, 0, 0.12);
+}
+body.light-theme .switch input:checked + .slider {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+body.light-theme .speed-widget {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+body.light-theme .alert-banner {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .hud-top,
+body.light-theme .hud-center,
+body.light-theme .hud-bottom {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .hud-btn-map {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .report-picker {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+}
+body.light-theme .report-opt {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .trip-history-panel {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.1);
+}
+body.light-theme .trip-history-item {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .onboarding {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+body.light-theme .flash-red {
+  background: rgba(239, 68, 68, 0.2);
+  box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.25);
+}
+body.light-theme .flash-green {
+  background: rgba(34, 197, 94, 0.18);
+  box-shadow: inset 0 0 80px rgba(34, 197, 94, 0.15);
+}
+
+body.light-theme .maplibregl-popup-content {
+  background: var(--card-solid);
+  color: var(--fg);
+  border-color: var(--border);
+}
+body.light-theme .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+body.light-theme .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+body.light-theme .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--card-solid);
+}
+body.light-theme .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+body.light-theme .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+body.light-theme .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--card-solid);
+}
+
+body.light-theme .trip-toast {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .speed-limit-badge {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+body.light-theme .hud-limit-badge {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+body.light-theme .avg-zone {
+  background: rgba(255, 152, 0, 0.1);
+  border-color: rgba(255, 152, 0, 0.2);
+}
+
+body.light-theme .loading-overlay {
+  background: rgba(240, 240, 240, 0.85);
+}
+
+body.light-theme .off-route-badge {
+  background: rgba(249, 115, 22, 0.08);
+}
+
+body.light-theme .drive-btn {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+body.light-theme .range-slider {
+  background: rgba(0, 0, 0, 0.12);
+}
+body.light-theme .range-slider::-webkit-slider-thumb {
+  background: var(--fg);
+}
+body.light-theme .range-slider::-moz-range-thumb {
+  background: var(--fg);
 }

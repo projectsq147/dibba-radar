@@ -45,8 +45,18 @@
     };
   }
 
+  /** Quick distance in km (equirectangular approximation) */
+  function quickDist(lat1, lon1, lat2, lon2) {
+    var R = 6371;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLon = (lon2 - lon1) * Math.PI / 180;
+    var cosLat = Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
+    return R * Math.sqrt(dLat * dLat + dLon * dLon * cosLat * cosLat);
+  }
+
   // Public API
   DR.haversine = haversine;
   DR.buildCumDist = buildCumDist;
   DR.snapToRoute = snapToRoute;
+  DR.quickDist = quickDist;
 })();

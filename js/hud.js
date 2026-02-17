@@ -220,6 +220,12 @@
         } else {
           speedEl.classList.add('hud-speed-ok');
         }
+
+        // Feed speed trend graph
+        if (DR.speedTrend && gpsState.speed !== null) {
+          var trendLimit = limit || 0;
+          DR.speedTrend.updateSpeedHistory(gpsState.speed, trendLimit);
+        }
       } else {
         speedEl.textContent = '--';
         speedEl.classList.remove('hud-speed-ok', 'hud-speed-warn', 'hud-speed-over');

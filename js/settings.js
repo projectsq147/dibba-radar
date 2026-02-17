@@ -8,6 +8,7 @@
     units: 'kmh',           // 'kmh' or 'mph'
     alertDistance: 'medium', // 'short', 'medium', 'long'
     audioEnabled: true,
+    voiceEnabled: true,
     theme: 'auto'           // 'auto', 'dark', 'light'
   };
 
@@ -74,6 +75,12 @@
     var audioToggle = document.getElementById('audioToggle');
     if (audioToggle) {
       audioToggle.checked = settings.audioEnabled;
+    }
+
+    // Update voice toggle
+    var voiceToggle = document.getElementById('voiceToggle');
+    if (voiceToggle) {
+      voiceToggle.checked = settings.voiceEnabled;
     }
 
     // Update theme buttons (handled by theme.js)
@@ -171,7 +178,7 @@
     }
   }
 
-  // Listen for audio toggle clicks
+  // Listen for audio and voice toggle clicks
   document.addEventListener('change', function(e) {
     if (e.target.id === 'audioToggle') {
       settings.audioEnabled = e.target.checked;
@@ -179,6 +186,13 @@
       
       document.dispatchEvent(new CustomEvent('settingsChange', {
         detail: { type: 'audio', value: settings.audioEnabled }
+      }));
+    } else if (e.target.id === 'voiceToggle') {
+      settings.voiceEnabled = e.target.checked;
+      saveSettings();
+      
+      document.dispatchEvent(new CustomEvent('settingsChange', {
+        detail: { type: 'voice', value: settings.voiceEnabled }
       }));
     }
   });

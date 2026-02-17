@@ -98,7 +98,7 @@
       if (sl1 !== sl2) continue;
 
       // Calculate distance between cameras
-      var dist = quickDistKm(cam1.lat, cam1.lon, cam2.lat, cam2.lon);
+      var dist = DR.quickDist(cam1.lat, cam1.lon, cam2.lat, cam2.lon);
       if (dist > MAX_ZONE_DISTANCE || dist < 0.3) continue;
 
       var zone = {
@@ -117,14 +117,7 @@
     console.log('Detected', avgSpeedZones.length, 'potential average speed zones (radar)');
   }
 
-  /** Quick distance in km */
-  function quickDistKm(lat1, lon1, lat2, lon2) {
-    var R = 6371;
-    var dLat = (lat2 - lat1) * Math.PI / 180;
-    var dLon = (lon2 - lon1) * Math.PI / 180;
-    var cosLat = Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
-    return R * Math.sqrt(dLat * dLat + dLon * dLon * cosLat * cosLat);
-  }
+  /* quickDistKm moved to utils.js as DR.quickDist */
 
   function detectAverageSpeedZones() {
     var cameras = DR.cameras.getAllCams();

@@ -128,8 +128,11 @@
     // Update meta theme-color for mobile browsers
     var metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.content = theme === 'light' ? '#1a1f2e' : '#060a0f';
+      metaTheme.content = theme === 'light' ? '#f0f0f0' : '#141414';
     }
+
+    // Note: Map tile switching skipped as it would disrupt layers.
+    // The dark map tiles work fine with light UI chrome.
   }
 
   function setTheme(theme) {
