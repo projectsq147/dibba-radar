@@ -1,0 +1,238 @@
+/* Route Selector Bottom Sheet */
+
+.route-selector {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(20, 20, 20, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px 24px 0 0;
+    padding: 0;
+    z-index: 1500;
+    max-height: 70vh;
+    display: none;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.route-selector.visible {
+    display: flex;
+    transform: translateY(0);
+}
+
+.route-selector-handle {
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin: 12px auto 8px;
+    flex-shrink: 0;
+}
+
+.route-selector-header {
+    padding: 12px 20px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.route-selector-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 4px;
+}
+
+.route-selector-subtitle {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+}
+
+.route-selector-content {
+    overflow-y: auto;
+    flex: 1;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.route-card {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.route-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.route-card:active {
+    transform: translateY(0);
+}
+
+.route-card.featured {
+    border-color: rgba(255, 87, 34, 0.3);
+    background: linear-gradient(135deg, rgba(255, 87, 34, 0.08) 0%, rgba(255, 87, 34, 0.04) 100%);
+}
+
+.route-card.featured::before {
+    content: 'FEATURED';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #ff5722;
+    letter-spacing: 0.5px;
+    background: rgba(255, 87, 34, 0.15);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.route-card-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 4px;
+    padding-right: 80px; /* space for featured badge */
+}
+
+.route-card-route {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 0 12px;
+}
+
+.route-card-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.route-card-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.route-card-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.route-card-stat-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.route-card-cameras {
+    position: relative;
+}
+
+.route-card-cameras .route-card-stat-value {
+    color: #ff5722;
+}
+
+.route-selector-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.route-selector-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.route-selector-close:active {
+    transform: scale(0.95);
+}
+
+/* Backdrop overlay */
+.route-selector-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1499;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.route-selector-backdrop.visible {
+    display: block;
+    opacity: 1;
+}
+
+/* Routes button in top bar */
+.routes-btn {
+    background: rgba(255, 87, 34, 0.15);
+    border: 1px solid rgba(255, 87, 34, 0.3);
+    color: #ff5722;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.routes-btn:hover {
+    background: rgba(255, 87, 34, 0.25);
+}
+
+.routes-btn:active {
+    transform: scale(0.97);
+}
+
+.routes-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Empty state */
+.route-selector-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.route-selector-empty svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+}

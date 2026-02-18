@@ -22,6 +22,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/radar.css">
+<link rel="stylesheet" href="css/route-selector.css">
 </head>
 <body>
 
@@ -31,6 +32,10 @@
 <!-- Top bar: branding + controls -->
 <div id="topBar" class="top-bar">
     <div class="top-brand">Dibba <span class="top-brand-accent">Radar</span></div>
+    <button id="routesBtn" class="routes-btn" onclick="toggleRouteSelector()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Routes
+    </button>
     <button id="tripHistoryBtn" class="top-btn" onclick="toggleTripHistory()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </button>
@@ -301,6 +306,20 @@
     <span id="tripToastText"></span>
 </div>
 
+<!-- Route Selector Bottom Sheet -->
+<div id="routeSelectorBackdrop" class="route-selector-backdrop" onclick="closeRouteSelector()"></div>
+<div id="routeSelector" class="route-selector">
+    <div class="route-selector-handle"></div>
+    <button class="route-selector-close" onclick="closeRouteSelector()">&times;</button>
+    <div class="route-selector-header">
+        <div class="route-selector-title">Select Route</div>
+        <div class="route-selector-subtitle">Choose a UAE highway route to view cameras</div>
+    </div>
+    <div id="routeSelectorContent" class="route-selector-content">
+        <!-- Route cards will be inserted here by JS -->
+    </div>
+</div>
+
 <!-- JS modules -->
 <script src="js/utils.js"></script>
 <script src="js/storage.js"></script>
@@ -323,6 +342,7 @@
 <script src="js/history.js"></script>
 <script src="js/share.js"></script>
 <script src="js/route-picker.js"></script>
+<script src="js/route-selector-v2.js"></script>
 <script src="js/trip-log.js"></script>
 <script src="js/reports.js"></script>
 <script src="js/app.js"></script>

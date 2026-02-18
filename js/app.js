@@ -26,6 +26,7 @@
     DR.share.init();
     DR.tripLog.init();
     DR.reports.init();
+    if (DR.routeSelectorV2) DR.routeSelectorV2.init();
 
     // Initialize search (for custom routes)
     DR.search.init();
