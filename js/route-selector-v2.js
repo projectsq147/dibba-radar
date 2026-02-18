@@ -18,7 +18,9 @@
   function loadRoutes(cb) {
     fetch('data/routes-index.json')
       .then(function(response) {
-        if (!response.ok) throw new Error('Failed to load routes');
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
         return response.json();
       })
       .then(function(data) {
@@ -27,6 +29,9 @@
       })
       .catch(function(err) {
         console.error('Error loading routes:', err);
+        if (DR.errorHandler) {
+          DR.errorHandler.handleDataError(err, 'routes index');
+        }
         routes = [];
         if (cb) cb();
       });
@@ -144,7 +149,16 @@
     // Load route data file
     var script = document.createElement('script');
     script.src = route.data_file;
+    
+    var loadTimeout = setTimeout(function() {
+      hideLoading();
+      if (DR.errorHandler) {
+        DR.errorHandler.showError('Route loading timed out. Check your connection.');
+      }
+    }, 10000);
+    
     script.onload = function() {
+      clearTimeout(loadTimeout);
       hideLoading();
       
       // Notify other modules that route changed
@@ -157,13 +171,20 @@
         DR.mapModule.fitBounds(route.bounds);
       }
       
-      // Show success toast
-      showToast('Loaded ' + route.name);
+      // Show success message
+      if (DR.errorHandler) {
+        DR.errorHandler.showSuccess('Loaded ' + route.name);
+      }
     };
+    
     script.onerror = function() {
+      clearTimeout(loadTimeout);
       hideLoading();
-      showToast('Failed to load route data', true);
+      if (DR.errorHandler) {
+        DR.errorHandler.showError('Failed to load route data. Try again.');
+      }
     };
+    
     document.head.appendChild(script);
   }
 

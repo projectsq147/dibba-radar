@@ -161,20 +161,72 @@
       cameraFeatures.push(cameraFeature);
     }
 
-    // Add radar cameras source and layer
+    // Add radar cameras source and layer with clustering
     if (!map.getSource(radarCamerasSourceId)) {
       map.addSource(radarCamerasSourceId, {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
           features: cameraFeatures
+        },
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50
+      });
+
+      // Cluster circles
+      map.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: radarCamerasSourceId,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#ff6d00',
+            10,
+            '#ff5722',
+            30,
+            '#f44336'
+          ],
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            15,
+            10,
+            20,
+            30,
+            25
+          ],
+          'circle-opacity': 0.8,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': 'rgba(255,255,255,0.9)'
         }
       });
 
+      // Cluster count labels
+      map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: radarCamerasSourceId,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+          'text-size': 12
+        },
+        paint: {
+          'text-color': '#ffffff'
+        }
+      });
+
+      // Unclustered points
       map.addLayer({
         id: radarCamerasLayerId,
         type: 'circle',
         source: radarCamerasSourceId,
+        filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-radius': ['get', 'size'],
           'circle-color': ['get', 'color'],
@@ -185,7 +237,25 @@
         }
       });
 
-      // Add click handler for radar cameras
+      // Click handler for clusters - zoom in
+      map.on('click', 'clusters', function(e) {
+        var features = map.queryRenderedFeatures(e.point, {
+          layers: ['clusters']
+        });
+        var clusterId = features[0].properties.cluster_id;
+        map.getSource(radarCamerasSourceId).getClusterExpansionZoom(
+          clusterId,
+          function(err, zoom) {
+            if (err) return;
+            map.easeTo({
+              center: features[0].geometry.coordinates,
+              zoom: zoom
+            });
+          }
+        );
+      });
+
+      // Add click handler for individual cameras
       map.on('click', radarCamerasLayerId, function(e) {
         var cam = e.features[0].properties;
         var coordinates = e.features[0].geometry.coordinates.slice();
@@ -203,6 +273,12 @@
       });
 
       // Change cursor on hover
+      map.on('mouseenter', 'clusters', function () {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'clusters', function () {
+        map.getCanvas().style.cursor = '';
+      });
       map.on('mouseenter', radarCamerasLayerId, function () {
         map.getCanvas().style.cursor = 'pointer';
       });
@@ -211,10 +287,14 @@
       });
 
     } else {
-      map.getSource(radarCamerasSourceId).setData({
-        type: 'FeatureCollection',
-        features: cameraFeatures
-      });
+      // Update existing source with new data
+      var source = map.getSource(radarCamerasSourceId);
+      if (source) {
+        source.setData({
+          type: 'FeatureCollection',
+          features: cameraFeatures
+        });
+      }
     }
 
     // Fit map to show all segments
