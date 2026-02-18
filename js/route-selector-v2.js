@@ -175,6 +175,11 @@
       if (DR.errorHandler) {
         DR.errorHandler.showSuccess('Loaded ' + route.name);
       }
+      
+      // Notify simplified UX
+      if (DR.simplifiedUX && DR.simplifiedUX.onRouteSelected) {
+        DR.simplifiedUX.onRouteSelected(routeId);
+      }
     };
     
     script.onerror = function() {

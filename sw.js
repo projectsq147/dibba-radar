@@ -1,6 +1,6 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v21';
+var CACHE_NAME = 'dibba-radar-v22';
 
 var APP_FILES = [
   './',
@@ -8,8 +8,10 @@ var APP_FILES = [
   './manifest.json',
   './css/radar.css',
   './css/route-selector.css',
+  './css/simplified-ui.css',
   './js/utils.js',
   './js/error-handler.js',
+  './js/simplified-ux.js',
   './js/storage.js',
   './js/settings.js',
   './js/theme.js',

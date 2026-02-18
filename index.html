@@ -23,6 +23,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/radar.css">
 <link rel="stylesheet" href="css/route-selector.css">
+<link rel="stylesheet" href="css/simplified-ui.css">
 </head>
 <body>
 
@@ -30,20 +31,16 @@
 <div id="map"></div>
 
 <!-- Top bar: branding + controls -->
-<div id="topBar" class="top-bar">
+<div id="topBar" class="top-bar simplified">
     <div class="top-brand">Dibba <span class="top-brand-accent">Radar</span></div>
+    <div style="flex: 1"></div>
     <button id="routesBtn" class="routes-btn" onclick="toggleRouteSelector()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Routes
     </button>
-    <button id="tripHistoryBtn" class="top-btn" onclick="toggleTripHistory()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    </button>
-    <button id="legendBtn" class="top-btn" onclick="toggleLegend()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    </button>
-    <button id="settingsBtn" class="top-btn" onclick="toggleSettings()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        Menu
     </button>
 </div>
 
@@ -306,14 +303,82 @@
     <span id="tripToastText"></span>
 </div>
 
+<!-- Welcome Prompt (First-time users) -->
+<div id="routePrompt" class="route-prompt" style="display:none">
+    <div class="route-prompt-icon">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <h1 class="route-prompt-title">Welcome to Dibba Radar</h1>
+    <p class="route-prompt-subtitle">Your speed camera companion for UAE highways. Choose a route to get started.</p>
+    <button class="route-prompt-button" onclick="openRoutePrompt()">Choose Route</button>
+</div>
+
+<!-- Route Info Badge (After route selection) -->
+<div id="routeInfoBadge" class="route-info-badge">
+    <div class="route-info-badge-title" id="routeBadgeName">Route Name</div>
+    <div class="route-info-badge-stats">
+        <div class="route-info-badge-stat">
+            <span class="route-info-badge-stat-value" id="routeBadgeDist">--</span>
+            <span class="route-info-badge-stat-label">km</span>
+        </div>
+        <div class="route-info-badge-stat">
+            <span class="route-info-badge-stat-value" id="routeBadgeTime">--</span>
+            <span class="route-info-badge-stat-label">min</span>
+        </div>
+        <div class="route-info-badge-stat">
+            <span class="route-info-badge-stat-value" id="routeBadgeCams">--</span>
+            <span class="route-info-badge-stat-label">cams</span>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Drive Button -->
+<button id="driveBtnEnhanced" class="drive-btn-enhanced" onclick="startDriveEnhanced()" style="display:none">
+    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    START DRIVE
+</button>
+
+<!-- Secondary Menu -->
+<div id="secondaryMenuBackdrop" class="route-selector-backdrop" onclick="closeMenu()" style="display:none"></div>
+<div id="secondaryMenu" class="secondary-menu">
+    <div class="secondary-menu-header">
+        <span class="secondary-menu-title">Menu</span>
+        <button class="secondary-menu-close" onclick="closeMenu()">&times;</button>
+    </div>
+    
+    <div class="secondary-menu-item" onclick="toggleLegend(); closeMenu();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div class="secondary-menu-item-text">
+            <div class="secondary-menu-item-title">Legend</div>
+            <div class="secondary-menu-item-desc">Camera and road colors</div>
+        </div>
+    </div>
+    
+    <div class="secondary-menu-item" onclick="toggleTripHistory(); closeMenu();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div class="secondary-menu-item-text">
+            <div class="secondary-menu-item-title">Trip History</div>
+            <div class="secondary-menu-item-desc">View past trips</div>
+        </div>
+    </div>
+    
+    <div class="secondary-menu-item" onclick="toggleSettings(); closeMenu();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m-9-9h6m6 0h6"/></svg>
+        <div class="secondary-menu-item-text">
+            <div class="secondary-menu-item-title">Settings</div>
+            <div class="secondary-menu-item-desc">Audio, alerts, theme</div>
+        </div>
+    </div>
+</div>
+
 <!-- Route Selector Bottom Sheet -->
 <div id="routeSelectorBackdrop" class="route-selector-backdrop" onclick="closeRouteSelector()"></div>
-<div id="routeSelector" class="route-selector">
+<div id="routeSelector" class="route-selector enhanced">
     <div class="route-selector-handle"></div>
     <button class="route-selector-close" onclick="closeRouteSelector()">&times;</button>
     <div class="route-selector-header">
-        <div class="route-selector-title">Select Route</div>
-        <div class="route-selector-subtitle">Choose a UAE highway route to view cameras</div>
+        <div class="route-selector-title">Choose Your Route</div>
+        <div class="route-selector-subtitle">7 major UAE highways with camera coverage</div>
     </div>
     <div id="routeSelectorContent" class="route-selector-content">
         <!-- Route cards will be inserted here by JS -->
@@ -344,6 +409,7 @@
 <script src="js/share.js"></script>
 <script src="js/route-picker.js"></script>
 <script src="js/route-selector-v2.js"></script>
+<script src="js/simplified-ux.js"></script>
 <script src="js/trip-log.js"></script>
 <script src="js/reports.js"></script>
 <script src="js/app.js"></script>
