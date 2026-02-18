@@ -25,14 +25,15 @@
 ### Phase 1: Core UX (Priority 1)
 - [x] Route selector bottom sheet with route cards
 - [x] Camera clustering on map (MapLibre cluster)
-- [ ] Improved search/routing flow
-- [ ] Loading states for all async operations
-- [ ] Error handling with user-friendly messages
+- [x] Loading states for all async operations
+- [x] Error handling with user-friendly messages
+- [ ] Improved search/routing flow (partial)
 
 ### Phase 2: Performance (Priority 2)
-- [ ] Lazy load route data (only active route)
+- [x] Camera clustering (50 camera radius, zoom threshold 14)
+- [x] Service worker updated with new files (v21)
+- [x] Lazy route data loading via dynamic scripts
 - [ ] Optimize camera rendering (viewport culling)
-- [ ] Service worker proper caching (offline-first)
 - [ ] Bundle optimization (reduce script tags)
 
 ### Phase 3: Mobile Polish (Priority 3)
