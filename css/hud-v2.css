@@ -1,0 +1,257 @@
+/* HUD 2.0 - Enhanced driving interface with gap intelligence */
+
+.hud-v2 {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    z-index: 3000;
+    display: none;
+    flex-direction: column;
+    padding: 20px;
+    font-family: 'Manrope', sans-serif;
+}
+
+/* Zone Status Banner */
+.hud-v2-zone {
+    background: #00e676;
+    color: #fff;
+    padding: 16px 20px;
+    border-radius: 16px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Speed Display */
+.hud-v2-speed-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.hud-v2-speed {
+    font-size: 120px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.hud-v2-speed-unit {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 24px;
+}
+
+/* Speed Limit & Margin */
+.hud-v2-limits {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.hud-v2-safe-speed {
+    font-size: 20px;
+    font-weight: 700;
+    color: #00e676;
+}
+
+.hud-v2-limit {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Margin Bar */
+.hud-v2-margin-container {
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 32px;
+}
+
+.hud-v2-margin-bar-bg {
+    width: 100%;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.hud-v2-margin-bar {
+    height: 100%;
+    background: #00e676;
+    transition: width 0.2s ease, background 0.3s ease;
+    border-radius: 6px;
+}
+
+.hud-v2-margin-text {
+    font-size: 14px;
+    text-align: center;
+    font-weight: 600;
+    color: #00e676;
+}
+
+/* Camera Timeline */
+.hud-v2-timeline {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: auto;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 16px;
+    color: #fff;
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+}
+
+.camera-icon {
+    font-size: 20px;
+}
+
+.camera-dist {
+    font-weight: 700;
+    min-width: 60px;
+}
+
+.gap-safe {
+    color: #00e676;
+    font-weight: 600;
+}
+
+.gap-moderate {
+    color: #ffd600;
+    font-weight: 600;
+}
+
+.gap-danger {
+    color: #ff1744;
+    font-weight: 600;
+}
+
+.timeline-empty {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 20px;
+    font-size: 16px;
+}
+
+/* Zone Flash Overlay */
+.zone-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3100;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+/* Control Buttons */
+.hud-v2-controls {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    gap: 12px;
+    z-index: 3050;
+}
+
+.hud-v2-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hud-v2-btn:active {
+    transform: scale(0.97);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.hud-v2-btn-stop {
+    background: rgba(244, 67, 54, 0.2);
+    border-color: rgba(244, 67, 54, 0.4);
+    color: #f44336;
+}
+
+.hud-v2-btn-stop:active {
+    background: rgba(244, 67, 54, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hud-v2-speed {
+        font-size: 96px;
+    }
+    
+    .hud-v2-zone {
+        font-size: 16px;
+        padding: 12px 16px;
+    }
+    
+    .timeline-item {
+        font-size: 14px;
+    }
+}
+
+/* Animation for zone changes */
+@keyframes pulse-zone {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.hud-v2-zone.pulse {
+    animation: pulse-zone 0.5s ease;
+}
+
+/* Safe zone glow effect */
+.hud-v2-zone.safe {
+    box-shadow: 0 4px 32px rgba(0, 230, 118, 0.5);
+}
+
+.hud-v2-zone.danger {
+    box-shadow: 0 4px 32px rgba(255, 23, 68, 0.5);
+}
+
+/* Speed over limit warning */
+.hud-v2-speed.over-limit {
+    color: #ff1744;
+    animation: pulse-speed 1s ease infinite;
+}
+
+@keyframes pulse-speed {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}

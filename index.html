@@ -22,6 +22,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/radar.css">
+<link rel="stylesheet" href="css/hud-v2.css">
 </head>
 <body>
 
@@ -162,6 +163,48 @@
     <button class="hud-btn hud-btn-map" onclick="hudToMap(event)">MAP</button>
     <button class="hud-btn hud-btn-stop" onclick="hudStop(event)">STOP</button>
 </div>
+
+<!-- HUD 2.0 - Enhanced driving interface -->
+<div id="hudV2" class="hud-v2">
+    <!-- Zone Status Banner -->
+    <div id="hudV2Zone" class="hud-v2-zone">
+        STANDBY
+    </div>
+    
+    <!-- Speed Display -->
+    <div class="hud-v2-speed-container">
+        <div id="hudV2Speed" class="hud-v2-speed">0</div>
+        <div class="hud-v2-speed-unit">km/h</div>
+        
+        <!-- Speed Limits -->
+        <div class="hud-v2-limits">
+            <div id="hudV2SafeSpeed" class="hud-v2-safe-speed">Safe: --</div>
+            <div id="hudV2Limit" class="hud-v2-limit">Limit: --</div>
+        </div>
+        
+        <!-- Margin Bar -->
+        <div class="hud-v2-margin-container">
+            <div class="hud-v2-margin-bar-bg">
+                <div id="hudV2MarginBar" class="hud-v2-margin-bar" style="width: 0%"></div>
+            </div>
+            <div id="hudV2MarginText" class="hud-v2-margin-text">SAFE</div>
+        </div>
+    </div>
+    
+    <!-- Camera Timeline -->
+    <div id="hudV2Timeline" class="hud-v2-timeline">
+        <div class="timeline-empty">No cameras ahead</div>
+    </div>
+    
+    <!-- Control Buttons -->
+    <div class="hud-v2-controls">
+        <button class="hud-v2-btn" onclick="switchToMap()">MAP</button>
+        <button class="hud-v2-btn hud-v2-btn-stop" onclick="stopDriveV2()">STOP</button>
+    </div>
+</div>
+
+<!-- Zone Flash Overlay -->
+<div id="zoneFlash" class="zone-flash"></div>
 
 <!-- Settings panel -->
 <div id="settingsPanel" class="settings-panel" style="display:none">
@@ -318,7 +361,9 @@
 <script src="js/alerts.js"></script>
 <script src="js/speed-limit.js"></script>
 <script src="js/radar-map.js"></script>
+<script src="js/gap-engine.js"></script>
 <script src="js/hud.js"></script>
+<script src="js/hud-v2.js"></script>
 <script src="js/speed-trend.js"></script>
 <script src="js/avg-speed-zones.js"></script>
 <script src="js/history.js"></script>

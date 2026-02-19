@@ -169,6 +169,14 @@
     if (DR.tripLog) DR.tripLog.startTrip();
     // Request notification permission for background alerts
     requestNotificationPermission();
+    
+    // Activate HUD 2.0
+    if (DR.hudV2) {
+      DR.hudV2.activate();
+      // Hide map
+      var mapEl = document.getElementById('map');
+      if (mapEl) mapEl.style.display = 'none';
+    }
   };
 
   window.stopDrive = function () {
@@ -218,6 +226,36 @@
       DR.radarMap.stopNearbyAlerts();
       DR.radarMap.setDrivingMode(false);
     }
+  };
+
+  // HUD 2.0 Controls
+  window.switchToMap = function () {
+    if (DR.hudV2) DR.hudV2.deactivate();
+    // Show map view
+    var mapEl = document.getElementById('map');
+    if (mapEl) mapEl.style.display = 'block';
+  };
+
+  window.stopDriveV2 = function () {
+    // End trip and show summary
+    if (DR.tripLog) {
+      var summary = DR.tripLog.endTrip();
+      if (summary && summary.durationMin > 0) {
+        showTripToast(summary);
+      }
+    }
+    if (DR.reports) DR.reports.resetAlerts();
+    if (DR.hudV2) DR.hudV2.deactivate();
+    DR.gps.stopTracking();
+    if (DR.radarMap) {
+      DR.radarMap.stopNearbyAlerts();
+      DR.radarMap.setDrivingMode(false);
+    }
+    // Show map view
+    var mapEl = document.getElementById('map');
+    if (mapEl) mapEl.style.display = 'block';
+    var startBtn = document.getElementById('startDriveBtn');
+    if (startBtn) startBtn.style.display = 'block';
   };
 
   // ========== Trip History ==========

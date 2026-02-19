@@ -1,14 +1,17 @@
 /* sw.js -- Service worker for Dibba Radar PWA */
 
-var CACHE_NAME = 'dibba-radar-v23';
+var CACHE_NAME = 'dibba-radar-v24';
 
 var APP_FILES = [
   './',
   './index.html',
   './manifest.json',
   './css/radar.css',
+  './css/hud-v2.css',
   './js/utils.js',
   './js/error-handler.js',
+  './js/gap-engine.js',
+  './js/hud-v2.js',
   './js/storage.js',
   './js/settings.js',
   './js/theme.js',
